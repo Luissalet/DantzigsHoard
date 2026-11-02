@@ -1,6 +1,6 @@
 # Dantzig's Hoard
 
-Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y seis herramientas MCP de planificación.
+Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y siete herramientas MCP de planificación.
 
 Estado: motor/API/MCP inicial integrado con aprobación de1938r1. La segunda entrega en worktree incorpora editor de pedidos, recursos, cronogramas, comparación, importación/exportación e historial; pendiente de revisión e integración. El configurador1939r2 está en Main, con cambios pedidos en revisión. Copilot común y registro Hub siguen pendientes. Arranque explícito, sin consultas a modelos.
 
@@ -56,3 +56,9 @@ Brave QA de la segunda entrega: comparación4/19 frente5/16, guardado y recupera
 Biblioteca HoardLink canónica incorporada mediante sync_vendored.py,112ficheros comprobados byte a byte, licencia y VENDORED.txt conservados. El copiloto comparte panel, conversaciones y servicio de Faustus; el botón usa el icono canónico. El contexto del planificador aporta el borrador real y los resultados mostrados, y una actualización del asistente refresca el historial sin sustituir el editor.
 
 El manifiesto incluye arranque explícito desdeHub, comprobación de salud y adaptación de puerto mediante --port. Leído con el parser real del Hub: launchable=true. Aún no registrado en el Hub: se hará tras revisión. agent_contract=false indica acceso por MCPstdio; no se anuncian rutasHTTP de agente que no existen. /api/copilot/info responde200 y el panel abre enBrave, sin enviar un turno al modelo. No se acredita inferencia con herramientas desde ese panel hasta registrar la conexión.
+
+## Exportación nativa (candidato1942)
+
+POST /api/exports conserva una instantánea JSON y devuelve un enlace GET /api/exports/{id} con Content-Disposition attachment. La UI ofrece ese enlace visible; ya no utiliza direcciones Blob. dantzig_export realiza la misma preparación por MCP sin iniciar servidor. Los documentos pueden recuperarse mediante dantzig_record; el historial de planificación conserva sus tipos problem/run y no mezcla exportaciones o catálogos. Las pruebas HTTP verifican bytes semánticos, Unicode, enteros grandes, cabecera y recuperación tras reabrir.
+
+Selector de archivos de Brave: fixture propia importada y validada correctamente. La captura del evento download no pudo certificar el guardado en disco. El acceso al gestor interno de descargas fue rechazado por la política del navegador y no se reintentó por otra superficie; no confundir la preparación y respuesta HTTP con un archivo verificado en la carpeta de descargas.

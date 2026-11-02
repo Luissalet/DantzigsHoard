@@ -60,3 +60,8 @@ class Problem(Record):
 class SolveRequest(Record):
     problem: Problem
     seconds: float = Field(default=10, gt=0, allow_inf_nan=False)
+
+
+class ExportRequest(Record):
+    document: dict | list[dict]
+    kind: Literal["problem", "results"] = "problem"

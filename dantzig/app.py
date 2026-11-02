@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException
 
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
+import json
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import os
 
 from . import service
-from .models import Problem, SolveRequest
+from .models import Problem, SolveRequest, ExportRequest
 from .solver import VerificationError
 from .configurator.api import router as configurator_router
 from .hoard_link.copilot import install_copilot
@@ -56,6 +57,23 @@ def save(problem: Problem):
 @app.post("/api/validate")
 def validate(problem: Problem):
     return problem.model_dump()
+
+
+@app.post("/api/exports")
+def export(request: ExportRequest):
+    return service.export_document(request.document, request.kind)
+
+
+@app.get("/api/exports/{key}")
+def download(key: str):
+    try:
+        record = service.load(key)
+    except KeyError:
+        raise HTTPException(404, "No se encuentra esa exportación")
+    if record["kind"] != "export":
+        raise HTTPException(404, "Ese documento no es una exportación")
+    return Response(json.dumps(record["document"], ensure_ascii=False, indent=2),
+                    media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{record["name"]}"'})
 
 
 @app.post("/api/solve")

@@ -13,6 +13,12 @@ def dantzig_validate(problem: dict) -> dict:
 
 
 @mcp.tool()
+def dantzig_export(document: dict | list[dict], kind: str = "problem") -> dict:
+    """Preserve an exact JSON document and return its relative HTTP download URL. Does not start HTTP. kind is problem or results."""
+    return service.export_document(document, kind)
+
+
+@mcp.tool()
 def dantzig_example() -> dict:
     """Get an invented six-job problem and all explicit model fields."""
     return service.example()
