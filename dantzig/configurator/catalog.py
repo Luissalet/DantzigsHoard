@@ -102,8 +102,7 @@ class Catalog:
         raise CatalogError(f"unknown rule {rid!r}")
 
     def to_dict(self) -> dict[str, Any]:
-        def num(x: Fraction) -> int | float:
-            return int(x) if x.denominator == 1 else float(x)
+        num = exact_number
 
         return {
             "id": self.id,
@@ -133,19 +132,43 @@ class Catalog:
         }
 
 
+def exact_number(x: Fraction) -> int | float | str:
+    """JSON form that reloads to exactly ``x``: int, exact float, or ``"p/q"``."""
+    if x.denominator == 1:
+        return int(x)
+    f = float(x)
+    if Fraction(repr(f)) == x:
+        return f
+    return f"{x.numerator}/{x.denominator}"
+
+
 def to_fraction(value: Any, where: str) -> Fraction:
     if isinstance(value, bool):
         raise CatalogError(f"{where}: expected a number, got a boolean")
     if isinstance(value, (int, Fraction)):
         return Fraction(value)
     if isinstance(value, float):
-        return Fraction(str(value))
+        if value != value or value in (float("inf"), float("-inf")):
+            raise CatalogError(f"{where}: {value!r} is not a finite number")
+        return Fraction(repr(value))
     if isinstance(value, str):
         try:
-            return Fraction(value)
-        except ValueError as exc:
+            return Fraction(value.strip())
+        except (ValueError, ZeroDivisionError) as exc:
             raise CatalogError(f"{where}: {value!r} is not a number") from exc
     raise CatalogError(f"{where}: expected a number, got {type(value).__name__}")
+
+
+def _int(value: Any, where: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise CatalogError(f"{where}: expected an integer")
+    try:
+        f = to_fraction(value, where)
+    except CatalogError:
+        raise CatalogError(f"{where}: expected an integer") from None
+    if f.denominator != 1:
+        raise CatalogError(f"{where}: expected an integer, got {value!r}")
+    return int(f)
 
 
 def _check_selector(cat: Catalog, sel: Any, where: str) -> None:
@@ -193,7 +216,9 @@ def load_catalog(data: dict[str, Any]) -> Catalog:
                 raise CatalogError(f"slot {sid!r}: duplicate option {oid!r}")
             oseen.add(oid)
             stock = o.get("stock")
-            qty = int(o.get("qty", 1))
+            qty = _int(o.get("qty", 1), f"{sid}.{oid}.qty")
+            if stock is not None:
+                stock = _int(stock, f"{sid}.{oid}.stock")
             if qty < 1:
                 raise CatalogError(f"{sid}.{oid}: qty must be >= 1")
             opts.append(
@@ -201,7 +226,7 @@ def load_catalog(data: dict[str, Any]) -> Catalog:
                     id=oid,
                     label=str(o.get("label") or oid),
                     price=to_fraction(o.get("price", 0), f"{sid}.{oid}.price"),
-                    stock=None if stock is None else int(stock),
+                    stock=stock,
                     qty=qty,
                     attrs=dict(o.get("attrs") or {}),
                 )

@@ -60,8 +60,8 @@ def run(
 ) -> dict[str, Any]:
     if operation not in OPERATIONS:
         raise CatalogError(f"operación desconocida {operation!r}; usa una de {', '.join(OPERATIONS)}")
-    if not 0 < seconds <= 600:
-        raise CatalogError("seconds debe estar entre 0 y 600")
+    if not seconds > 0:
+        raise CatalogError("seconds debe ser positivo: es el presupuesto total de la operación")
     raw, cid = _resolve(catalog, catalog_id)
     cat = load_catalog(raw)
     sel = selections or {}

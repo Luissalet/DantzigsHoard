@@ -41,7 +41,7 @@ Segundo módulo (tarea1939 del espacio `dantzig`): catálogos de componentes con
 - `explain`: todos los conjuntos mínimos de elecciones incompatibles con las reglas mínimas (o la falta de existencias) que los causan; `exhaustive` indica si puede haber más.
 - `verify`: contrasta `complete` y `repair` con enumeración exhaustiva independiente (hasta 250.000 combinaciones).
 
-Estados: `optimal`, `feasible` (válido sin prueba de óptimo), `infeasible` (demostrado imposible), `inconclusive` (sin respuesta en el tiempo dado). La compatibilidad es lógica: no sustituye un cálculo físico ni de resistencia.
+Estados: `optimal`, `feasible` (válido sin prueba de óptimo), `infeasible` (demostrado imposible), `inconclusive` (sin respuesta en el tiempo dado). `seconds` es el presupuesto total de la operación (sin tope fijo): cada paso usa lo que queda; en `complete`/`repair` cada etapa lexicográfica recibe una parte del resto y solo fija un óptimo demostrado, de modo que si una etapa posterior se queda sin tiempo se devuelve la mejor configuración ya encontrada como `feasible`. Precios y números del catálogo se guardan exactos: enteros, decimales exactos o fracciones `"p/q"`. La compatibilidad es lógica: no sustituye un cálculo físico ni de resistencia.
 
 Pruebas: `tests/test_configurator.py`, 55 casos; 40 catálogos aleatorios contrastados con enumeración en comprobación, completado, reparación y explicación; conflictos mínimos comprobados exhaustivamente; caso que exige cambiar dos elecciones a la vez; API y MCP stdio real.
 
