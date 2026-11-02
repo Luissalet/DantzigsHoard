@@ -5,10 +5,12 @@ from pathlib import Path
 from . import service
 from .models import Problem, SolveRequest
 from .solver import VerificationError
+from .configurator.api import router as configurator_router
 
 app = FastAPI(title="Dantzig's Hoard")
 static = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=static), name="static")
+app.include_router(configurator_router)
 
 
 @app.get("/")

@@ -2,11 +2,51 @@
   "schema": 1,
   "id": "dantzig",
   "name": "Dantzig's Hoard",
-  "purpose": "Native resource scheduling with explicit constraints and verified plans.",
-  "capabilities": ["resource-scheduling", "alternative-resources", "precedence", "deadlines", "family-change-gaps", "verified-schedules", "persistent-problems"],
-  "placeholders": ["DANTZIG_DIR", "PYTHON", "APP_URL"],
-  "defaults": {"APP_URL": "http://127.0.0.1:5241", "PYTHON": "{DANTZIG_DIR}/.venv/Scripts/python.exe"},
-  "app": {"url_default": "http://127.0.0.1:5241", "ui_url": "{APP_URL}/docs", "health": {"path": "/api/health", "expect": {"service": "dantzig-hoard"}}},
-  "mcp": {"transport": "stdio", "command": "{PYTHON}", "args": ["-m", "dantzig.mcp_server"], "env": {"PYTHONPATH": "{DANTZIG_DIR}", "DANTZIG_DATA": "{DANTZIG_DIR}/data"}},
+  "purpose": "Native resource scheduling and product configuration with explicit constraints and verified results.",
+  "capabilities": [
+    "resource-scheduling",
+    "alternative-resources",
+    "precedence",
+    "deadlines",
+    "family-change-gaps",
+    "verified-schedules",
+    "persistent-problems",
+    "product-configuration",
+    "compatibility-propagation",
+    "minimal-repair",
+    "conflict-explanation",
+    "bill-of-materials"
+  ],
+  "placeholders": [
+    "DANTZIG_DIR",
+    "PYTHON",
+    "APP_URL"
+  ],
+  "defaults": {
+    "APP_URL": "http://127.0.0.1:5241",
+    "PYTHON": "{DANTZIG_DIR}/.venv/Scripts/python.exe"
+  },
+  "app": {
+    "url_default": "http://127.0.0.1:5241",
+    "ui_url": "{APP_URL}/docs",
+    "health": {
+      "path": "/api/health",
+      "expect": {
+        "service": "dantzig-hoard"
+      }
+    }
+  },
+  "mcp": {
+    "transport": "stdio",
+    "command": "{PYTHON}",
+    "args": [
+      "-m",
+      "dantzig.mcp_server"
+    ],
+    "env": {
+      "PYTHONPATH": "{DANTZIG_DIR}",
+      "DANTZIG_DATA": "{DANTZIG_DIR}/data"
+    }
+  },
   "notes": "Candidate manifest, not registered in Hub. Explicit startup only. Current web entry is technical API documentation; planner UI and shared copilot are pending."
 }
