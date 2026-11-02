@@ -83,10 +83,13 @@ function changed() {
   stash();
 }
 function number(value) {
-  return value === "" ? null : Number(value);
+  if (value === "") return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : value;
 }
 function bind(input, read) {
   input.addEventListener("input", () => {
+    input.setCustomValidity("");
     read(input.value);
     changed();
   });
@@ -194,7 +197,7 @@ function render() {
         "number",
         (v) => {
           if (v === "") delete j.durations[r];
-          else setDuration(j, r, Number(v));
+          else setDuration(j, r, number(v));
         },
       );
       input.min = "1";
@@ -252,6 +255,10 @@ function install(value) {
   stash();
 }
 function formValid() {
+  for (const input of $("planner").querySelectorAll('input[type="number"]')) {
+    const exact = input.id === "seconds" || input.value === "" || Number.isSafeInteger(Number(input.value));
+    input.setCustomValidity(exact ? "" : "Este entero no se puede representar sin perder cifras en el editor. Importa el documento desde una herramienta MCP o utiliza otra unidad de tiempo.");
+  }
   if (!$("planner").reportValidity()) return false;
   if (!problem.jobs.length) {
     message("Añade al menos un pedido.", true);
@@ -579,3 +586,12 @@ try {
     true,
   );
 }
+
+// The shared Faustus panel reads the actual draft, never a DOM approximation.
+window.hoardCopilot = {
+  context: async () => ({
+    active_objects: runs.map(run => ({object_id: run.id, kind: "schedule_run", title: run.name})),
+    editor: {kind: "scheduling_problem", draft: structuredClone(problem), results: runs.map(run => ({id: run.id, result: structuredClone(run.result)}))},
+  }),
+  onChange: () => history().catch(error => message(error.message, true)),
+};

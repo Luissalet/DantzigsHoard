@@ -38,6 +38,28 @@
       "expect": {
         "service": "dantzig-hoard"
       }
+    },
+    "launch_hint": {
+      "kind": "process",
+      "executable": "{PYTHON}",
+      "argv": [
+        "-m",
+        "dantzig"
+      ],
+      "cwd": "{DANTZIG_DIR}",
+      "readiness": {
+        "url": "{APP_URL}/api/health",
+        "timeout_s": 20
+      },
+      "port_argument": "--port"
+    },
+    "identify": {
+      "service": [
+        "dantzig-hoard"
+      ],
+      "title": [
+        "dantzig"
+      ]
     }
   },
   "mcp": {
@@ -52,5 +74,15 @@
       "DANTZIG_DATA": "{DANTZIG_DIR}/data"
     }
   },
-  "notes": "Candidate planner UI and staged solver awaiting review. Configurator revision2 has requested changes. Explicit startup only; Hub registration and shared copilot pending."
+  "notes": "Explicit startup only. MCP stdio uses the shared native service; discovery starts no app. Copilot uses the canonical family relay, without a separate conversation loop. Planner and family integration candidates awaiting review; configurator has requested changes.",
+  "x-family": {
+    "copilot": {
+      "contract_version": "1.0",
+      "info": "/api/copilot/info",
+      "panel": "/api/copilot/panel.js",
+      "proxy": "/api/copilot/proxy",
+      "launcher": "/api/copilot/launcher.js"
+    },
+    "agent_contract": false
+  }
 }

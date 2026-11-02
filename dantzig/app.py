@@ -3,11 +3,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+import os
 
 from . import service
 from .models import Problem, SolveRequest
 from .solver import VerificationError
 from .configurator.api import router as configurator_router
+from .hoard_link.copilot import install_copilot
 
 app = FastAPI(title="Dantzig's Hoard")
 
@@ -15,6 +17,7 @@ static = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=static), name="static")
 
 app.include_router(configurator_router)
+install_copilot(app, "dantzig", os.environ.get("DANTZIG_DATA", str(Path(__file__).resolve().parents[1] / "data")), app_name="Dantzig's Hoard")
 
 
 @app.get("/")
