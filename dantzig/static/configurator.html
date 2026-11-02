@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es" data-hoard-app="dantzig">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configurador · Dantzig's Hoard</title>
+<link rel="stylesheet" href="/static/hoard-theme.css">
+<style>
+:root{--bg:var(--hoard-deep,#171919);--sf:var(--hoard-surface,#1e2121);--el:var(--hoard-elevated,#282b2c);--bd:var(--hoard-border,#3a3d3e);--tx:var(--hoard-text,#e1eaec);--mu:var(--hoard-text-muted,#b4bcbe);--ac:var(--hoard-accent,#c9a24a);--ok:var(--hoard-success,#4a9e6d);--wa:var(--hoard-warning,#d4a843);--er:var(--hoard-danger,#c4463a)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 var(--hoard-font-sans,system-ui,sans-serif)}
+header{height:64px;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--bd)}
+header .brand{font-family:var(--hoard-font-serif,Georgia,serif);color:var(--ac);font-size:20px}
+header nav a{color:var(--mu);text-decoration:none;margin-right:14px}header nav a.on{color:var(--tx)}
+main{display:grid;grid-template-columns:minmax(320px,420px) 1fr;gap:18px;padding:18px 20px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+h1{font-family:var(--hoard-font-serif,Georgia,serif);font-size:26px;margin:0 0 12px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin:18px 0 8px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px}
+select,button,textarea{font:inherit;color:var(--tx);background:var(--el);border:1px solid var(--bd);border-radius:6px}
+select{padding:6px 8px;width:100%}button{padding:7px 12px;cursor:pointer}button:hover{border-color:var(--ac)}
+button.primary{background:var(--ac);color:#111;border-color:var(--ac);font-weight:600}
+textarea{width:100%;min-height:260px;font-family:var(--hoard-font-mono,monospace);font-size:12px;padding:8px}
+.slot{display:grid;grid-template-columns:120px 1fr 26px;gap:8px;align-items:center;margin:6px 0}
+.slot label{color:var(--mu)}.slot .flag{text-align:center}
+.bad{color:var(--er)}.good{color:var(--ok)}.warn{color:var(--wa)}.muted{color:var(--mu)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+table{border-collapse:collapse;width:100%}td,th{padding:5px 8px;border-bottom:1px solid var(--bd);text-align:left}th{color:var(--mu);font-weight:500}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;border:1px solid var(--bd);font-size:12px;margin-left:6px}
+.conf{border-left:3px solid var(--er);padding:6px 10px;margin:8px 0;background:var(--el);border-radius:0 6px 6px 0}
+details summary{cursor:pointer;color:var(--mu)}
+</style>
+</head>
+<body>
+<header><span class="brand">Dantzig's Hoard</span><nav><a href="/">Planificador</a><a class="on" href="/configurator">Configurador</a><a href="/docs">API</a></nav></header>
+<main>
+<section>
+  <h1>Configurador</h1>
+  <div class="card">
+    <label class="muted" for="cat">Catálogo</label>
+    <select id="cat"></select>
+    <h2>Elecciones</h2>
+    <div id="slots"></div>
+    <div id="state" class="muted"></div>
+    <div class="row">
+      <button class="primary" id="b-complete">Completar al menor precio</button>
+      <button id="b-repair">Reparar</button>
+      <button id="b-explain">¿Por qué no encaja?</button>
+      <button id="b-verify">Comprobar por enumeración</button>
+      <button id="b-clear">Limpiar</button>
+    </div>
+  </div>
+  <details style="margin-top:14px"><summary>Editar catálogo (JSON)</summary>
+    <div class="card" style="margin-top:8px">
+      <textarea id="json" spellcheck="false"></textarea>
+      <div class="row"><button id="b-save">Guardar como catálogo nuevo</button><span id="save-msg" class="muted"></span></div>
+    </div>
+  </details>
+</section>
+<section>
+  <div class="card" id="out"><span class="muted">Elige opciones a la izquierda: las incompatibles se marcan con ✕ y siguen seleccionables para ver por qué fallan.</span></div>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let catalog=null, catalogId=null, sel={}, last=null;
+const fmt=(v,c)=>new Intl.NumberFormat('es-ES',{style:'currency',currency:c||'EUR'}).format(v);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(path,body){const r=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail?.toString()||r.statusText);return j}
+function req(extra){return Object.assign({selections:sel},catalogId?{catalog_id:catalogId}:{catalog},extra||{})}
+function label(slot,id){if(id===null)return'— vacío —';const o=catalog.slots.find(s=>s.id===slot).options.find(o=>o.id===id);return o?o.label:id}
+async function loadList(){
+  const [ex,saved]=await Promise.all([api('/api/configurator/examples'),api('/api/configurator/catalogs')]);
+  $('#cat').innerHTML=ex.map(e=>`<option value="ex:${esc(e.id)}">${esc(e.name)} (ejemplo)</option>`).join('')+saved.map(c=>`<option value="db:${esc(c.id)}">${esc(c.name)} · ${esc(c.created)}</option>`).join('');
+}
+async function pick(v){
+  const [k,id]=[v.slice(0,2),v.slice(3)];
+  if(k==='ex'){catalog=await api('/api/configurator/examples/'+id);}else{catalog=(await api('/api/configurator/catalogs/'+id)).catalog;}
+  catalogId=id;sel={};$('#json').value=JSON.stringify(catalog,null,2);await refresh();
+}
+function renderSlots(pr){
+  const rows=pr?Object.fromEntries(pr.slots.map(s=>[s.slot,s])):{};
+  $('#slots').innerHTML=catalog.slots.map(s=>{
+    const r=rows[s.id]||{viable:[]},vi=new Set(r.viable);
+    const opts=[`<option value="__unset__">${s.required?'— sin elegir —':'— sin elegir (opcional) —'}</option>`]
+      .concat(s.required?[]:[`<option value="__none__" ${sel[s.id]===null?'selected':''}>${vi.has(null)?'':'✕ '}— vacío —</option>`])
+      .concat(s.options.map(o=>`<option value="${esc(o.id)}" ${sel[s.id]===o.id?'selected':''}>${vi.has(o.id)?'':'✕ '}${esc(o.label)} · ${fmt(o.price*(o.qty||1),catalog.currency)}${o.stock===0?' · sin existencias':''}</option>`));
+    const flag=s.id in sel?(r.selection_ok===false?'<span class="bad" title="No encaja con el resto">✕</span>':'<span class="good">✓</span>'):(r.forced!==undefined&&r.forced!==null&&r.viable.length===1?'<span class="warn" title="Única opción posible">!</span>':'');
+    return `<div class="slot"><label for="s-${esc(s.id)}">${esc(s.label)}</label><select id="s-${esc(s.id)}" data-slot="${esc(s.id)}">${opts.join('')}</select><span class="flag">${flag}</span></div>`;
+  }).join('');
+  document.querySelectorAll('#slots select').forEach(e=>e.onchange=async()=>{const v=e.value;if(v==='__unset__')delete sel[e.dataset.slot];else sel[e.dataset.slot]=v==='__none__'?null:v;await refresh();});
+}
+async function refresh(){
+  renderSlots(null);
+  try{const pr=await api('/api/configurator/propagate',req());renderSlots(pr);
+    const forced=pr.slots.filter(s=>!s.is_set&&s.viable.length===1).map(s=>`${catalog.slots.find(x=>x.id===s.slot).label}: ${label(s.slot,s.viable[0])}`);
+    $('#state').innerHTML=(pr.consistent?'<span class="good">Las elecciones encajan.</span>':'<span class="bad">Las elecciones no encajan entre sí.</span>')+(forced.length?` <span class="warn">Obligado: ${esc(forced.join('; '))}</span>`:'')+(pr.status==='inconclusive'?' <span class="warn">Algunas opciones no se pudieron comprobar a tiempo.</span>':'');
+  }catch(e){$('#state').innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+}
+function statusPill(s){const m={optimal:['óptimo','good'],feasible:['válido, sin prueba de óptimo','warn'],infeasible:['imposible','bad'],inconclusive:['sin respuesta a tiempo','warn']}[s]||[s,''];return `<span class="pill ${m[1]}">${m[0]}</span>`}
+function conflicts(list){return (list||[]).map(c=>`<div class="conf">${c.selections.map(s=>`<b>${esc(catalog.slots.find(x=>x.id===s.slot).label)}</b>: ${esc(label(s.slot,s.option))}`).join(' + ')}<div class="muted">${c.rules.map(r=>esc(r.label)).join(' · ')}</div></div>`).join('')}
+function bomTable(b){return `<table><tr><th>Elemento</th><th>Opción</th><th class="n">Ud.</th><th class="n">Precio</th><th class="n">Total</th></tr>${b.lines.map(l=>`<tr><td>${esc(l.slot_label)}</td><td>${esc(l.label)}</td><td class="n">${l.qty}</td><td class="n">${fmt(l.unit_price,b.currency)}</td><td class="n">${fmt(l.total,b.currency)}</td></tr>`).join('')}<tr><th colspan="4">Total</th><th class="n">${fmt(b.total,b.currency)}</th></tr></table>`}
+async function act(op){
+  $('#out').innerHTML='<span class="muted">Calculando…</span>';
+  try{const r=await api('/api/configurator/'+op,req({save:op==='complete'||op==='repair'}));last=r;let h='';
+    if(op==='complete'){h=`<h2>Configuración completa ${statusPill(r.status)}</h2>`+(r.bom?bomTable(r.bom):'')+(r.conflict?`<p class="bad">No hay forma de completar con estas elecciones:</p>`+conflicts([r.conflict]):'');
+      if(r.configuration){sel=Object.assign({},r.configuration);await refresh();}}
+    if(op==='repair'){h=`<h2>Reparación ${statusPill(r.status)}</h2>`;
+      if(r.changes){h+=r.changes.length?`<p>Cambia ${r.changes.length} elección${r.changes.length>1?'es':''}:</p><ul>${r.changes.map(c=>`<li><b>${esc(catalog.slots.find(x=>x.id===c.slot).label)}</b>: ${esc(label(c.slot,c.from))} → ${esc(label(c.slot,c.to))}</li>`).join('')}</ul>`:'<p class="good">No hace falta cambiar nada.</p>';
+        if(r.original_conflicts&&r.original_conflicts.length)h+=`<h2>Conflictos de partida</h2>`+conflicts(r.original_conflicts);
+        h+=`<h2>Lista de materiales</h2>`+bomTable(r.bom);sel=Object.assign({},r.configuration);await refresh();}
+      else h+=`<p class="bad">${esc(r.reason||'Sin solución')}</p>`}
+    if(op==='explain'){h=r.status==='feasible'?'<p class="good">Las elecciones encajan: no hay conflicto.</p>':r.status==='inconclusive'?'<p class="warn">No se pudo decidir a tiempo.</p>':`<h2>Conflictos mínimos</h2><p class="muted">Cada bloque es un grupo de elecciones que no pueden ir juntas; quitar cualquiera de ellas deshace ese conflicto.${r.exhaustive?'':' Puede haber más.'}</p>`+conflicts(r.conflicts)}
+    if(op==='verify'){h=`<h2>Comprobación independiente</h2><p>${r.agrees?'<span class="good">El resultado del motor coincide con la enumeración exhaustiva.</span>':'<span class="bad">Discrepancia con la enumeración.</span>'}</p><p class="muted">${r.space.toLocaleString('es-ES')} combinaciones revisadas. Completar: ${r.complete.agrees?'coincide':'no coincide'} · Reparar: ${r.repair.agrees?'coincide':'no coincide'}.</p>`}
+    if(r.record_id)h+=`<p class="muted">Guardado como ${esc(r.record_id)}</p>`;
+    $('#out').innerHTML=h;
+  }catch(e){$('#out').innerHTML=`<p class="bad">${esc(e.message)}</p>`}
+}
+$('#cat').onchange=e=>pick(e.target.value);
+$('#b-complete').onclick=()=>act('complete');$('#b-repair').onclick=()=>act('repair');$('#b-explain').onclick=()=>act('explain');$('#b-verify').onclick=()=>act('verify');
+$('#b-clear').onclick=async()=>{sel={};$('#out').innerHTML='';await refresh()};
+$('#b-save').onclick=async()=>{try{const c=JSON.parse($('#json').value);const r=await api('/api/configurator/catalogs',c);$('#save-msg').textContent='Guardado.';await loadList();$('#cat').value='db:'+r.id;await pick('db:'+r.id)}catch(e){$('#save-msg').textContent=e.message}};
+(async()=>{await loadList();await pick($('#cat').value)})();
+</script>
+</body>
+</html>
