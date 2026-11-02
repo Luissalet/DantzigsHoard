@@ -21,7 +21,7 @@ class RunRequest(BaseModel):
     catalog_id: str | None = None
     selections: dict[str, str | None] = Field(default_factory=dict)
     objective: list[dict[str, Any]] | None = None
-    seconds: float = Field(default=10, gt=0, le=600, allow_inf_nan=False)
+    seconds: float = Field(default=10, gt=0, allow_inf_nan=False, description="Presupuesto total de la operación en segundos")
     save: bool = False
 
 

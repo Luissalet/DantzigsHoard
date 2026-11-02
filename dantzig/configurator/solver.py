@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from fractions import Fraction
 from math import lcm
+from time import monotonic
 from typing import Any, Iterable
 
 from ortools.sat.python import cp_model
@@ -77,8 +78,9 @@ def normalize_selections(cat: Catalog, selections: dict[str, Any] | None) -> Ass
 class ConfigModel:
     """CP-SAT encoding with one enforcement literal per rule, stock line and selection."""
 
-    def __init__(self, cat: Catalog):
+    def __init__(self, cat: Catalog, seconds: float = DEFAULT_TIME_LIMIT):
         self.cat = cat
+        self.deadline = monotonic() + float(seconds)
         self.m = cp_model.CpModel()
         self.x: dict[tuple[str, str | None], cp_model.IntVar] = {}
         for slot in cat.slots:
@@ -182,7 +184,18 @@ class ConfigModel:
         return self.sel[key]
 
     # -- solving -----------------------------------------------------------
-    def solve(self, assumptions: list, *, time_limit: float, workers: int = 1):
+    def remaining(self) -> float:
+        return max(0.0, self.deadline - monotonic())
+
+    def solve(self, assumptions: list, *, cap: float | None = None, workers: int = 1):
+        """Solve within the operation's remaining budget (optionally capped for this step).
+
+        Returns ``(None, UNKNOWN)`` without solving once the budget is spent.
+        """
+        rem = self.remaining()
+        time_limit = rem if cap is None else min(rem, cap)
+        if time_limit <= 0.001:
+            return None, cp_model.UNKNOWN
         self.m.ClearAssumptions()
         if assumptions:
             self.m.AddAssumptions(assumptions)
@@ -250,8 +263,10 @@ def bom(cat: Catalog, asg: Assignment) -> dict[str, Any]:
     return {"currency": cat.currency, "lines": lines, "total": _out(total)}
 
 
-def _out(x: Fraction) -> int | float:
-    return int(x) if x.denominator == 1 else round(float(x), 6)
+def _out(x: Fraction) -> int | float | str:
+    from .catalog import exact_number
+
+    return exact_number(x)
 
 
 def _explain_label(cat: Catalog, key: str) -> dict[str, Any]:
@@ -266,9 +281,9 @@ def _explain_label(cat: Catalog, key: str) -> dict[str, Any]:
 def check(cat: Catalog, selections: dict[str, Any] | None = None, *, time_limit: float = DEFAULT_TIME_LIMIT) -> dict[str, Any]:
     """Is there any valid configuration that keeps all selections?"""
     sel = normalize_selections(cat, selections)
-    model = ConfigModel(cat)
+    model = ConfigModel(cat, time_limit)
     lits = [model.selection_literal(k, v) for k, v in sel.items()]
-    s, st = model.solve(lits + _all_guards(model), time_limit=time_limit)
+    s, st = model.solve(lits + _all_guards(model))
     status = _STATUS[st]
     out: dict[str, Any] = {"status": "feasible" if status in ("optimal", "feasible") else status, "selections": sel}
     if status in ("optimal", "feasible"):
@@ -278,14 +293,14 @@ def check(cat: Catalog, selections: dict[str, Any] | None = None, *, time_limit:
     return out
 
 
-def _mus(model: ConfigModel, fixed: list, items: list, time_limit: float) -> tuple[list, bool]:
+def _mus(model: ConfigModel, fixed: list, items: list) -> tuple[list, bool]:
     """Deletion-based minimal subset of ``items`` that stays infeasible with ``fixed``."""
     keep = list(items)
     complete = True
     i = 0
     while i < len(keep):
         trial = keep[:i] + keep[i + 1 :]
-        _, st = model.solve(fixed + trial, time_limit=time_limit)
+        _, st = model.solve(fixed + trial)
         if st == cp_model.INFEASIBLE:
             keep = trial
         else:
@@ -302,17 +317,16 @@ def explain(cat: Catalog, selections: dict[str, Any] | None = None, *, time_limi
     distinct minimal conflicts (``exhaustive`` says whether there can be more).
     """
     sel = normalize_selections(cat, selections)
-    model = ConfigModel(cat)
+    model = ConfigModel(cat, time_limit)
     sel_key = {model.selection_literal(k, v).Index(): (k, v) for k, v in sel.items()}
     guard_by_idx = {g.Index(): name for name, g in model.guards.items()}
     sl = [model.sel[(k, v)] for k, v in sel.items()]
     gl = _all_guards(model)
-    _, st = model.solve(sl + gl, time_limit=time_limit)
+    _, st = model.solve(sl + gl)
     if st in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         return {"status": "feasible", "selections": sel, "conflict": None, "conflicts": []}
     if st != cp_model.INFEASIBLE:
         return {"status": "inconclusive", "selections": sel, "conflict": None, "conflicts": []}
-    per_step = max(0.5, time_limit / 8)
     minimal = True
     found: list[frozenset[int]] = []
     conflicts: list[dict[str, Any]] = []
@@ -329,13 +343,13 @@ def explain(cat: Catalog, selections: dict[str, Any] | None = None, *, time_limi
             core = next(f for f in found if f <= key)
             core_lits = [l for l in subset if l.Index() in core]
         else:
-            _, st = model.solve(subset + gl, time_limit=per_step)
+            _, st = model.solve(subset + gl)
             if st != cp_model.INFEASIBLE:
                 if st not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                     exhaustive = False
                 continue
-            core_lits, ok1 = _mus(model, gl, subset, per_step)
-            rule_core, ok2 = _mus(model, core_lits, gl, per_step)
+            core_lits, ok1 = _mus(model, gl, subset)
+            rule_core, ok2 = _mus(model, core_lits, gl)
             minimal = minimal and ok1 and ok2
             found.append(frozenset(l.Index() for l in core_lits))
             conflicts.append(
@@ -362,16 +376,17 @@ def explain(cat: Catalog, selections: dict[str, Any] | None = None, *, time_limi
 def propagate(cat: Catalog, selections: dict[str, Any] | None = None, *, time_limit: float = DEFAULT_TIME_LIMIT) -> dict[str, Any]:
     """For each slot, which values remain possible when the *other* selections are kept."""
     sel = normalize_selections(cat, selections)
-    model = ConfigModel(cat)
+    model = ConfigModel(cat, time_limit)
     gl = _all_guards(model)
-    per = max(0.2, time_limit / max(1, sum(len(s.values()) for s in cat.slots)))
+    left = sum(len(s.values()) for s in cat.slots) + 1
     slots_out = []
     inconclusive = False
     for slot in cat.slots:
         others = [model.selection_literal(k, v) for k, v in sel.items() if k != slot.id]
         viable, removed = [], []
         for v in slot.values():
-            _, st = model.solve(others + gl + [model.selection_literal(slot.id, v)], time_limit=per)
+            _, st = model.solve(others + gl + [model.selection_literal(slot.id, v)], cap=model.remaining() / left)
+            left -= 1
             if st in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                 viable.append(v)
             elif st == cp_model.INFEASIBLE:
@@ -392,48 +407,54 @@ def propagate(cat: Catalog, selections: dict[str, Any] | None = None, *, time_li
                 "selection_ok": (sel[slot.id] in viable) if slot.id in sel else None,
             }
         )
-    _, st = model.solve([model.selection_literal(k, v) for k, v in sel.items()] + gl, time_limit=per * 4)
+    _, st = model.solve([model.selection_literal(k, v) for k, v in sel.items()] + gl)
     feasible_now = st in (cp_model.OPTIMAL, cp_model.FEASIBLE)
     if st not in (cp_model.OPTIMAL, cp_model.FEASIBLE, cp_model.INFEASIBLE):
         inconclusive = True
     return {"status": "inconclusive" if inconclusive else "ok", "consistent": feasible_now, "slots": slots_out}
 
 
-def _optimize(model: ConfigModel, base_assumptions: list, objective: list[dict[str, Any]], prefix: list[tuple[Any, int]], time_limit: float):
-    """Lexicographic optimisation. ``prefix`` are (expr, sense) terms ranked before ``objective``."""
-    terms: list[tuple[Any, int, str]] = [(e, sense, label) for e, sense, label in prefix]
+def _optimize(model: ConfigModel, base_assumptions: list, objective: list[dict[str, Any]], prefix: list[tuple[Any, int, str]]):
+    """Lexicographic optimisation in stages within the model's budget.
+
+    Each stage minimises one term with the earlier optima fixed. A stage only
+    fixes a *proven* optimum; if a later stage runs out of time the best
+    assignment found so far is returned as ``feasible``.
+    """
+    terms: list[tuple[Any, int, str]] = list(prefix)
     for t in objective or [{"attr": "price", "sense": "min"}]:
         expr, _ = model.objective_expr(t)
         terms.append((expr, 1 if t.get("sense", "min") == "min" else -1, t.get("attr", "price")))
-    fixes = []
-    proven = True
-    solver = None
+    best: Assignment | None = None
     values: list[int] = []
-    per = max(0.5, time_limit / max(1, len(terms)))
-    for expr, sense, _label in terms:
+    for n, (expr, sense, _label) in enumerate(terms):
+        if isinstance(expr, int):  # constant term: nothing to optimise
+            values.append(expr)
+            continue
         if sense == 1:
             model.m.Minimize(expr)
         else:
             model.m.Maximize(expr)
-        s, st = model.solve(base_assumptions, time_limit=per, workers=8)
-        if st == cp_model.INFEASIBLE:
-            _clear_fix(model, fixes)
+        s, st = model.solve(base_assumptions, cap=model.remaining() / (len(terms) - n), workers=8)
+        model.m.ClearObjective()
+        if st == cp_model.INFEASIBLE and best is None:
             return "infeasible", None, values
         if st not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            _clear_fix(model, fixes)
-            return ("feasible" if solver else "inconclusive"), solver, values
-        solver = s
-        val = int(round(s.ObjectiveValue()))
+            return ("feasible" if best is not None else "inconclusive"), best, values
+        best = model.assignment(s)
+        val = int(s.Value(expr))
         values.append(val)
         if st != cp_model.OPTIMAL:
-            proven = False
-            break
-        fixes.append(model.m.Add(expr == val))
-    model.m.ClearObjective()
-    status = "optimal" if proven else "feasible"
-    assignment = model.assignment(solver)
-    _clear_fix(model, fixes)
-    return status, assignment, values
+            return "feasible", best, values
+        model.m.Add(expr == val)
+    if best is None:  # every term was constant
+        s, st = model.solve(base_assumptions)
+        if st == cp_model.INFEASIBLE:
+            return "infeasible", None, values
+        if st not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            return "inconclusive", None, values
+        best = model.assignment(s)
+    return "optimal", best, values
 
 
 def _clear_fix(model: ConfigModel, fixes: list) -> None:
@@ -444,9 +465,9 @@ def _clear_fix(model: ConfigModel, fixes: list) -> None:
 def complete(cat: Catalog, selections: dict[str, Any] | None = None, *, objective: list[dict[str, Any]] | None = None, time_limit: float = DEFAULT_TIME_LIMIT) -> dict[str, Any]:
     """Fill every unset slot keeping the selections, best by ``objective`` (lexicographic)."""
     sel = normalize_selections(cat, selections)
-    model = ConfigModel(cat)
+    model = ConfigModel(cat, time_limit)
     lits = [model.selection_literal(k, v) for k, v in sel.items()]
-    status, asg, values = _optimize(model, lits + _all_guards(model), objective or [], [], time_limit)
+    status, asg, values = _optimize(model, lits + _all_guards(model), objective or [], [])
     out: dict[str, Any] = {"status": status, "selections": sel, "objective": objective or [{"attr": "price", "sense": "min"}]}
     if asg is not None:
         out["configuration"] = asg
@@ -454,21 +475,21 @@ def complete(cat: Catalog, selections: dict[str, Any] | None = None, *, objectiv
         out["bom"] = bom(cat, asg)
         out["violations"] = violations(cat, asg)
     elif status == "infeasible":
-        out["conflict"] = explain(cat, sel, time_limit=time_limit).get("conflict")
+        out["conflict"] = explain(cat, sel, time_limit=max(model.remaining(), 0.001)).get("conflict")
     return out
 
 
 def repair(cat: Catalog, selections: dict[str, Any] | None = None, *, objective: list[dict[str, Any]] | None = None, time_limit: float = DEFAULT_TIME_LIMIT) -> dict[str, Any]:
     """Keep as many selections as possible; change the fewest, then optimise ``objective``."""
     sel = normalize_selections(cat, selections)
-    model = ConfigModel(cat)
+    model = ConfigModel(cat, time_limit)
     lits = [model.selection_literal(k, v) for k, v in sel.items()]
     broken = sum(1 - l for l in lits) if lits else 0
-    status, asg, values = _optimize(model, _all_guards(model), objective or [], [(broken, 1, "changes")], time_limit)
+    status, asg, values = _optimize(model, _all_guards(model), objective or [], [(broken, 1, "changes")])
     out: dict[str, Any] = {"status": status, "selections": sel}
     if asg is None:
         if status == "infeasible":
-            out["conflict"] = explain(cat, {}, time_limit=time_limit).get("conflict")
+            out["conflict"] = explain(cat, {}, time_limit=max(model.remaining(), 0.001)).get("conflict")
             out["reason"] = "El catálogo no admite ninguna configuración válida."
         return out
     changes = [{"slot": k, "from": v, "to": asg.get(k)} for k, v in sel.items() if asg.get(k) != v]
@@ -483,7 +504,7 @@ def repair(cat: Catalog, selections: dict[str, Any] | None = None, *, objective:
         }
     )
     if changes:
-        ex = explain(cat, sel, time_limit=time_limit)
+        ex = explain(cat, sel, time_limit=max(model.remaining(), 0.001))
         out["original_conflict"] = ex.get("conflict")
         out["original_conflicts"] = ex.get("conflicts")
     return out
