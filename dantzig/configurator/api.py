@@ -12,7 +12,7 @@ from . import service
 from .catalog import CatalogError
 
 router = APIRouter()
-STATIC = Path(__file__).resolve().parents[1] / "static"
+STATIC = Path(__file__).resolve().parent / "static"
 
 
 class RunRequest(BaseModel):
@@ -37,6 +37,11 @@ def _guard(fn, *a, **kw):
 @router.get("/configurator", include_in_schema=False)
 def page():
     return FileResponse(STATIC / "configurator.html")
+
+
+@router.get("/configurator/hoard-theme.css", include_in_schema=False)
+def theme():
+    return FileResponse(STATIC / "hoard-theme.css", media_type="text/css")
 
 
 @router.get("/api/configurator/examples")

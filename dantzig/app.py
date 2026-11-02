@@ -1,13 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 from . import service
 from .models import Problem, SolveRequest
 from .configurator.api import router as configurator_router
 
 app = FastAPI(title="Dantzig's Hoard")
-app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
 app.include_router(configurator_router)
 
 

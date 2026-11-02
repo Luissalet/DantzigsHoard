@@ -186,6 +186,7 @@ def test_http_configurator(tmp_path, monkeypatch):
     monkeypatch.setenv("DANTZIG_DATA", str(tmp_path))
     with TestClient(app) as c:
         assert c.get("/configurator").status_code == 200
+        assert c.get("/configurator/hoard-theme.css").headers["content-type"].startswith("text/css")
         ex = c.get("/api/configurator/examples").json()
         assert ex[0]["id"] == "drive-kit"
         cat = c.get("/api/configurator/examples/drive-kit").json()
