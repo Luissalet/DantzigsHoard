@@ -235,3 +235,87 @@ async def test_configurator_mcp_stdio(tmp_path):
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+# --- review #1939 r2 (codex-hangar) -----------------------------------------
+
+def test_second_stage_timeout_keeps_first_assignment(kit, monkeypatch):
+    from ortools.sat.python import cp_model
+
+    from dantzig.configurator import solver as sv
+
+    real = sv.ConfigModel.solve
+    calls = {"n": 0}
+
+    def flaky(self, assumptions, *, cap=None, workers=1):
+        if self.m.HasObjective():
+            calls["n"] += 1
+            if calls["n"] == 2:
+                return None, cp_model.UNKNOWN
+        return real(self, assumptions, cap=cap, workers=workers)
+
+    monkeypatch.setattr(sv.ConfigModel, "solve", flaky)
+    lex = [{"attr": "price", "sense": "min"}, {"attr": "count", "sense": "min"}]
+    res = complete(kit, {"motor": "m15"}, objective=lex)
+    assert res["status"] == "feasible"
+    assert violations(kit, res["configuration"]) == []
+    assert res["bom"]["total"] == complete(kit, {"motor": "m15"})["bom"]["total"]  # first stage was optimal
+    calls["n"] = 0
+    rep = repair(kit, {"motor": "m075", "drive": "d2", "grid": "g690"}, objective=[{"attr": "price"}])
+    assert rep["status"] == "feasible" and rep["change_count"] == 2
+
+
+def test_fractions_round_trip_exactly():
+    from fractions import Fraction
+
+    data = {"slots": [{"id": "a", "options": [{"id": "x", "price": "1/3", "qty": 3}, {"id": "y", "price": 0.1}]}]}
+    cat = load_catalog(data)
+    again = load_catalog(cat.to_dict())
+    assert again.slot("a").option("x").price == Fraction(1, 3)
+    assert again.slot("a").option("y").price == Fraction(1, 10)
+    assert cat.to_dict()["slots"][0]["options"][0]["price"] == "1/3"
+    res = complete(cat, {"a": "x"})
+    assert res["bom"]["lines"][0]["unit_price"] == "1/3"
+    assert res["bom"]["total"] == 1
+
+
+@pytest.mark.parametrize("price", ["1/0", float("nan"), float("inf"), "abc", True])
+def test_bad_numbers_are_catalog_errors(price):
+    with pytest.raises(CatalogError):
+        load_catalog({"slots": [{"id": "a", "options": [{"id": "x", "price": price}]}]})
+
+
+@pytest.mark.parametrize("field,value", [("qty", 1.5), ("qty", "2/3"), ("stock", "many"), ("qty", 0)])
+def test_bad_integers_are_catalog_errors(field, value):
+    with pytest.raises(CatalogError):
+        load_catalog({"slots": [{"id": "a", "options": [{"id": "x", field: value}]}]})
+
+
+def test_large_integer_objective_is_exact():
+    big = 10**15 + 1
+    cat = load_catalog({"slots": [{"id": "a", "options": [{"id": "x", "price": big}, {"id": "y", "price": big + 2}]}]})
+    res = complete(cat, {})
+    assert res["status"] == "optimal" and res["bom"]["total"] == big
+
+
+def test_budget_is_global_and_never_crashes(kit):
+    r = explain(kit, {"motor": "m075", "drive": "d2", "grid": "g690", "enclosure": "e_s", "cooling": "hex"}, time_limit=0.0005)
+    assert r["status"] in ("infeasible", "inconclusive")
+    p = propagate(kit, {"motor": "m55"}, time_limit=0.0005)
+    assert p["status"] == "inconclusive"
+    c = complete(kit, {}, time_limit=0.0005)
+    assert c["status"] == "inconclusive" and "configuration" not in c
+
+
+def test_http_seconds_has_no_arbitrary_cap(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from dantzig.app import app
+
+    monkeypatch.setenv("DANTZIG_DATA", str(tmp_path))
+    with TestClient(app) as c:
+        assert c.post("/api/configurator/complete", json={"catalog_id": "drive-kit", "seconds": 3600}).json()["status"] == "optimal"
+        assert c.post("/api/configurator/complete", json={"catalog_id": "drive-kit", "seconds": 0}).status_code == 422
+        bad = {"slots": [{"id": "a", "options": [{"id": "x", "price": "1/0"}]}]}
+        assert c.post("/api/configurator/catalogs", json=bad).status_code == 422
+        assert c.post("/api/configurator/complete", json={"catalog": bad}).status_code == 422
