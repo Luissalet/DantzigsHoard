@@ -4,7 +4,12 @@ Time is integral, jobs cannot be interrupted, resources have unit capacity.
 Changeovers represent minimum elapsed gaps, not occupied setup operations.
 """
 from ortools.sat.python import cp_model
+from time import perf_counter
 from .models import Problem
+
+
+class VerificationError(RuntimeError):
+    pass
 
 
 def verify(problem: Problem, rows: list[dict]) -> list[str]:
@@ -93,19 +98,37 @@ def solve(problem: Problem, seconds: float = 10) -> dict:
             model.add_max_equality(late, [0, ends[j.id] - j.due])
             terms.append(j.weight * late)
     tardiness = sum(terms)
-    if problem.objective == "tardiness_then_makespan":
-        model.minimize(tardiness * (horizon + 1) + makespan)
-    else:
-        model.minimize(makespan * (horizon * sum(j.weight for j in problem.jobs) + 1) + tardiness)
+    primary, secondary = (tardiness, makespan) if problem.objective == "tardiness_then_makespan" else (makespan, tardiness)
+    model.minimize(primary)
     error = model.validate()
     if error:
         raise ValueError(f"El modelo no es representable: {error}")
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = seconds
-    solver.parameters.num_search_workers = 1
+    solver.parameters.num_workers = 1
+    started = perf_counter()
     status = solver.solve(model)
+    bounds = {"primary": solver.best_objective_bound, "secondary": None}
+    if status == cp_model.OPTIMAL:
+        # Fix only a proven primary optimum; never label a secondary optimum
+        # under an unproven first-stage choice as globally lexicographic optimal.
+        primary_value = solver.value(primary)
+        bounds["primary"] = primary_value
+        model.add(primary == primary_value)
+        model.minimize(secondary)
+        remaining = seconds - (perf_counter() - started)
+        status = cp_model.FEASIBLE
+        if remaining > 0:
+            second = cp_model.CpSolver()
+            second.parameters.max_time_in_seconds = remaining
+            second.parameters.num_workers = 1
+            second_status = second.solve(model)
+            bounds["secondary"] = second.best_objective_bound
+            if second_status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+                solver, status = second, second_status
+        # Otherwise retain the first-stage incumbent and report feasible.
     result = {"status": solver.status_name(status).lower(), "objective": problem.objective,
-              "unit": problem.unit, "horizon": horizon, "seconds": solver.wall_time,
+              "unit": problem.unit, "horizon": horizon, "seconds": perf_counter() - started,
               "scope": "Trabajos indivisibles, recursos exclusivos, tiempos enteros; cambios de familia como separación mínima.",
               "schedule": []}
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -115,8 +138,8 @@ def solve(problem: Problem, seconds: float = 10) -> dict:
              "start": solver.value(starts[j.id]), "end": solver.value(ends[j.id])} for j in problem.jobs]
     failures = verify(problem, rows)
     if failures:
-        raise RuntimeError(f"La comprobación independiente rechazó el plan: {failures}")
+        raise VerificationError(f"La comprobación independiente rechazó el plan: {failures}")
     result.update(schedule=rows, verified=True, makespan=max(r["end"] for r in rows),
                   weighted_tardiness=sum(j.weight * max(0, rows[i]["end"] - j.due) for i, j in enumerate(problem.jobs) if j.due is not None),
-                  objective_bound=solver.best_objective_bound)
+                  objective_bound=None, objective_bounds=bounds)
     return result

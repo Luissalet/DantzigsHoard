@@ -22,7 +22,7 @@ def exhaustive(p):
                 end = max(j.release, finish[r] + gap) + j.durations[r]
                 late += j.weight * max(0, end - j.due) if j.due is not None else 0
                 finish[r], previous[r] = end, j.family
-            value = (late, max(finish.values()))
+            value = (late, max(finish.values())) if p.objective=='tardiness_then_makespan' else (max(finish.values()),late)
             best = value if best is None else min(best, value)
     return best
 
@@ -39,9 +39,12 @@ def test_against_independent_enumeration(seed):
     p = Problem(name='inventado', resources=['r1','r2'], family_change=rng.randrange(4), jobs=[
         dict(id=str(i), durations={r:rng.randint(1,7) for r in ['r1','r2'] if r == 'r1' or rng.randrange(2)},
              family=str(rng.randrange(2)), release=rng.randrange(5), due=rng.randrange(4,15),weight=rng.randint(1,3)) for i in range(4)])
-    r = solve(p)
-    assert r['status'] == 'optimal'
-    assert (r['weighted_tardiness'],r['makespan']) == exhaustive(p)
+    for objective in ['tardiness_then_makespan','makespan_then_tardiness']:
+        p.objective=objective
+        r = solve(p)
+        assert r['status'] == 'optimal'
+        value=(r['weighted_tardiness'],r['makespan']) if objective=='tardiness_then_makespan' else (r['makespan'],r['weighted_tardiness'])
+        assert value == exhaustive(p)
 
 
 def test_deadlines_precedence_and_impossibility():
@@ -63,6 +66,19 @@ def test_reverse_objective_and_verifier():
     assert verify(p,r['schedule'])
 
 
+def test_large_horizon_avoids_lexicographic_scaling_overflow():
+    p=Problem(name='escala grande',resources=['r'],horizon=3_000_000_000,
+              jobs=[dict(id='A',durations={'r':2_000_000_000},due=1,weight=1000)])
+    for objective in ['tardiness_then_makespan','makespan_then_tardiness']:
+        p.objective=objective
+        r=solve(p)
+        assert r['status']=='optimal'
+        assert r['makespan']==2_000_000_000
+        assert r['weighted_tardiness']==1_999_999_999_000
+        assert r['objective_bound'] is None
+        assert r['objective_bounds']['secondary'] is not None
+
+
 @pytest.mark.parametrize('mutate', [lambda p:p.update(extra=True), lambda p:p['jobs'][0]['durations'].update({'Máquina 1': True}), lambda p:p['jobs'][0].update(after=['missing']),lambda p:p['resources'].append(p['resources'][0])])
 def test_reject_invalid_input(mutate):
     p = example();mutate(p)
@@ -81,6 +97,12 @@ def test_http_persistence_reopen_and_export(tmp_path,monkeypatch):
         assert len(c.get('/api/records').json())==2
         assert c.get('/api/records/missing').status_code==404
         assert c.post('/api/solve',json={'problem':p,'seconds':-1}).status_code==422
+        assert c.post('/api/validate',json=p).json()==p
+        p['jobs'][0]['after']=['B'];p['jobs'][1]['after']=['A']
+        rejected=c.post('/api/validate',json=p)
+        assert rejected.status_code==422 and 'cíclicas' in rejected.text
+        assert c.get('/').status_code==200
+        assert c.get('/static/planner.js').status_code==200
     with TestClient(app) as c:
         assert len(c.get('/api/records').json())==2
 
@@ -96,7 +118,7 @@ async def test_real_mcp_stdio(tmp_path):
         async with ClientSession(read,write) as session:
             await session.initialize()
             tools=await session.list_tools()
-            assert len(tools.tools)==5
+            assert len(tools.tools)==6
             assert not (tmp_path/'mcp').exists()
             r=await session.call_tool('dantzig_solve',{'problem':example(),'seconds':5})
             assert not r.is_error
