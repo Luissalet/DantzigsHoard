@@ -395,19 +395,20 @@ async function calculate(compare = false) {
     setBusy(false);
   }
 }
-function download(value, name) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = node("a");
-  a.href = url;
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+async function download(value, name) {
+  try {
+    const exported = await api("/api/exports", {document: value, kind: name.includes("problema") ? "problem" : "results"});
+    const a = node("a");
+    a.href = exported.url;
+    a.download = exported.filename;
+    a.textContent = "Descargar " + exported.filename;
+    message("Documento preparado. Su copia también queda conservada localmente. ");
+    $("notice").append(document.createTextNode(" "), a);
+  } catch(error) {
+    message("No se pudo exportar: " + error.message, true);
+  }
 }
+
 async function history() {
   const items = (await api("/api/records")).filter(item => ["problem", "run"].includes(item.kind));
   const target = $("history");

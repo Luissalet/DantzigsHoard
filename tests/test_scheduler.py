@@ -131,6 +131,29 @@ async def test_real_mcp_stdio(tmp_path):
             assert data['result']['weighted_tardiness']==4
             loaded=await session.call_tool('dantzig_record',{'record_id':data['id']})
             assert not loaded.is_error
+            exported=await session.call_tool('dantzig_export',{'document':data,'kind':'results'})
+            assert not exported.is_error
+            export_data=json.loads(next(x.text for x in exported.content if x.type=='text'))
+            assert export_data['url'].endswith(export_data['id'])
+            kept=await session.call_tool('dantzig_record',{'record_id':export_data['id']})
+            assert json.loads(next(x.text for x in kept.content if x.type=='text'))['document']==data
+
+
+def test_http_export_exact_and_durable(tmp_path,monkeypatch):
+    monkeypatch.setenv('DANTZIG_DATA',str(tmp_path))
+    with TestClient(app) as c:
+        original={'name':'Borrador Ω 李明','jobs':[], 'integer':9007199254740993}
+        export=c.post('/api/exports',json={'document':original}).json()
+        downloaded=c.get(export['url'])
+        assert downloaded.status_code==200 and downloaded.json()==original
+        assert 'attachment' in downloaded.headers['content-disposition']
+        assert export['filename'] in downloaded.headers['content-disposition']
+        other=c.post('/api/problems',json=example()).json()
+        assert c.get('/api/exports/'+other['id']).status_code==404
+        assert c.get('/api/exports/missing').status_code==404
+        assert c.post('/api/exports',json={'document':{},'kind':'other'}).status_code==422
+    with TestClient(app) as c:
+        assert c.get(export['url']).json()==original
 
 
 @pytest.fixture

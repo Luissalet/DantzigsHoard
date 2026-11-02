@@ -19,7 +19,8 @@
     "planning-editor",
     "schedule-comparison",
     "schedule-timeline",
-    "problem-validation"
+    "problem-validation",
+    "durable-json-export"
   ],
   "placeholders": [
     "DANTZIG_DIR",

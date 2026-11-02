@@ -5,7 +5,7 @@ import os
 import sqlite3
 import uuid
 from contextlib import contextmanager
-from .models import Problem, SolveRequest
+from .models import Problem, SolveRequest, ExportRequest
 from .solver import solve
 
 
@@ -45,6 +45,13 @@ def catalog():
 
 def save_problem(problem: dict):
     return save("problem", Problem.model_validate(problem).model_dump())
+
+
+def export_document(document: dict | list[dict], kind: str = "problem"):
+    request = ExportRequest(document=document, kind=kind)
+    filename = "dantzig-problema.json" if request.kind == "problem" else "dantzig-resultados.json"
+    record = save("export", {"name": filename, "document": request.document})
+    return {"id": record["id"], "url": f"/api/exports/{record['id']}", "filename": filename}
 
 
 def solve_problem(problem: dict, seconds: float = 10):
