@@ -1,0 +1,112 @@
+import itertools
+import json
+import random
+import pytest
+from fastapi.testclient import TestClient
+from pydantic import ValidationError
+from dantzig.models import Problem
+from dantzig.solver import solve, verify
+from dantzig.service import example
+from dantzig.app import app
+
+
+def exhaustive(p):
+    best = None
+    for order in itertools.permutations(p.jobs):
+        for assignment in itertools.product(*(list(j.durations) for j in order)):
+            finish = {r: 0 for r in p.resources}
+            previous = {}
+            late = 0
+            for j, r in zip(order, assignment):
+                gap = p.family_change if r in previous and previous[r] != j.family else 0
+                end = max(j.release, finish[r] + gap) + j.durations[r]
+                late += j.weight * max(0, end - j.due) if j.due is not None else 0
+                finish[r], previous[r] = end, j.family
+            value = (late, max(finish.values()))
+            best = value if best is None else min(best, value)
+    return best
+
+
+def test_research_example():
+    result = solve(Problem(**example()))
+    assert result['status'] == 'optimal'
+    assert (result['weighted_tardiness'], result['makespan']) == (4, 19)
+
+
+@pytest.mark.parametrize('seed', range(12))
+def test_against_independent_enumeration(seed):
+    rng = random.Random(seed)
+    p = Problem(name='inventado', resources=['r1','r2'], family_change=rng.randrange(4), jobs=[
+        dict(id=str(i), durations={r:rng.randint(1,7) for r in ['r1','r2'] if r == 'r1' or rng.randrange(2)},
+             family=str(rng.randrange(2)), release=rng.randrange(5), due=rng.randrange(4,15),weight=rng.randint(1,3)) for i in range(4)])
+    r = solve(p)
+    assert r['status'] == 'optimal'
+    assert (r['weighted_tardiness'],r['makespan']) == exhaustive(p)
+
+
+def test_deadlines_precedence_and_impossibility():
+    p = Problem(name='cadena',resources=['r'],jobs=[dict(id='A',durations={'r':3}),dict(id='B',durations={'r':2},after=['A'],release=4,deadline=6)])
+    r = solve(p)
+    assert r['status'] == 'optimal'
+    assert {x['job']:x for x in r['schedule']}['B']['start'] == 4
+    p.jobs[1].deadline = 4
+    assert solve(p)['status'] == 'infeasible'
+    p.jobs[0].after = ['B']
+    assert solve(p)['status'] == 'infeasible'
+
+
+def test_reverse_objective_and_verifier():
+    p = Problem(**example());p.objective='makespan_then_tardiness'
+    r = solve(p)
+    assert r['makespan'] <= 18
+    r['schedule'][0]['start'] = -1
+    assert verify(p,r['schedule'])
+
+
+@pytest.mark.parametrize('mutate', [lambda p:p.update(extra=True), lambda p:p['jobs'][0]['durations'].update({'Máquina 1': True}), lambda p:p['jobs'][0].update(after=['missing']),lambda p:p['resources'].append(p['resources'][0])])
+def test_reject_invalid_input(mutate):
+    p = example();mutate(p)
+    with pytest.raises(ValidationError):Problem(**p)
+
+
+def test_http_persistence_reopen_and_export(tmp_path,monkeypatch):
+    monkeypatch.setenv('DANTZIG_DATA',str(tmp_path))
+    with TestClient(app) as c:
+        p=c.get('/api/example').json()
+        saved=c.post('/api/problems',json=p).json()
+        run=c.post('/api/solve',json={'problem':p}).json()
+        assert run['result']['verified']
+        assert c.get('/api/records/'+run['id']).json()['problem']==p
+        assert c.get('/api/records/'+saved['id']).json()['name']==p['name']
+        assert len(c.get('/api/records').json())==2
+        assert c.get('/api/records/missing').status_code==404
+        assert c.post('/api/solve',json={'problem':p,'seconds':-1}).status_code==422
+    with TestClient(app) as c:
+        assert len(c.get('/api/records').json())==2
+
+
+@pytest.mark.anyio
+async def test_real_mcp_stdio(tmp_path):
+    import os,sys
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+    env={**os.environ,'DANTZIG_DATA':str(tmp_path/'mcp')}
+    params=StdioServerParameters(command=sys.executable,args=['-m','dantzig.mcp_server'],env=env)
+    async with stdio_client(params) as (read,write):
+        async with ClientSession(read,write) as session:
+            await session.initialize()
+            tools=await session.list_tools()
+            assert len(tools.tools)==5
+            assert not (tmp_path/'mcp').exists()
+            r=await session.call_tool('dantzig_solve',{'problem':example(),'seconds':5})
+            assert not r.is_error
+            # Text is the interoperable fallback, structuredContent may add a result envelope.
+            data=json.loads(next(x.text for x in r.content if x.type=='text'))
+            assert data['result']['status']=='optimal'
+            assert data['result']['weighted_tardiness']==4
+            loaded=await session.call_tool('dantzig_record',{'record_id':data['id']})
+            assert not loaded.is_error
+
+
+@pytest.fixture
+def anyio_backend():return 'asyncio'
