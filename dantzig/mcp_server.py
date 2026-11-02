@@ -6,6 +6,12 @@ mcp = MCPServer("Dantzig's Hoard")
 
 
 @mcp.tool()
+def dantzig_validate(problem: dict) -> dict:
+    """Validate and normalize a scheduling problem without saving or solving it."""
+    return service.Problem.model_validate(problem).model_dump()
+
+
+@mcp.tool()
 def dantzig_example() -> dict:
     """Get an invented six-job problem and all explicit model fields."""
     return service.example()

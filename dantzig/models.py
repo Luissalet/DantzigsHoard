@@ -41,6 +41,19 @@ class Problem(Record):
                 raise ValueError(f"{j.id}: duración para un recurso desconocido")
             if set(j.after) - set(ids) or j.id in j.after:
                 raise ValueError(f"{j.id}: precedencia desconocida o sobre sí mismo")
+        pending = {j.id: set(j.after) for j in self.jobs}
+        ready = [key for key, parents in pending.items() if not parents]
+        reached = set()
+        while ready:
+            key = ready.pop()
+            reached.add(key)
+            for child, parents in pending.items():
+                if key in parents:
+                    parents.remove(key)
+                    if not parents:
+                        ready.append(child)
+        if len(reached) != len(ids):
+            raise ValueError("Dependencias cíclicas o bloqueadas por un ciclo: " + ", ".join(sorted(set(ids)-reached)))
         return self
 
 

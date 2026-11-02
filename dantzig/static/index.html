@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dantzig’s Hoard · Planificación</title>
+    <link rel="stylesheet" href="/static/planner.css" />
+    <script type="module" src="/static/planner.js"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/">Dantzig’s Hoard</a
+      ><span>Planificación de recursos</span><a href="/docs">API</a>
+    </header>
+    <main>
+      <div class="title">
+        <h1>Plan de trabajo</h1>
+        <div class="actions">
+          <button id="example" type="button">Cargar ejemplo</button
+          ><label class="file"
+            >Importar documento<input
+              id="import"
+              type="file"
+              accept=".json,application/json"
+          /></label>
+        </div>
+      </div>
+      <p class="intro">
+        Asigna pedidos a recursos, respeta sus condiciones y compara qué cambia
+        al priorizar los plazos o el tiempo total.
+      </p>
+      <p id="notice" role="status" aria-live="polite"></p>
+      <form id="planner">
+        <div class="fields">
+          <label>Nombre del plan<input id="name" required /></label
+          ><label
+            >Unidad de tiempo<input id="unit" required value="minutos" /></label
+          ><label
+            >Separación al cambiar de familia<input
+              id="change"
+              type="number"
+              min="0"
+              step="1"
+              value="0"
+              required /></label
+          ><label
+            >Horizonte máximo (opcional)<input
+              id="horizon"
+              type="number"
+              min="1"
+              step="1"
+          /></label>
+        </div>
+        <section aria-labelledby="resources-heading">
+          <div class="section-title">
+            <h2 id="resources-heading">Recursos</h2>
+            <button id="add-resource" type="button">Añadir recurso</button>
+          </div>
+          <div id="resources" class="resource-list"></div>
+        </section>
+        <section aria-labelledby="jobs-heading">
+          <div class="section-title">
+            <h2 id="jobs-heading">Pedidos</h2>
+            <button id="add-job" type="button">Añadir pedido</button>
+          </div>
+          <p class="help">
+            Una duración vacía significa que ese recurso no puede realizar el
+            pedido. Todas las fechas son instantes desde el mismo origen.
+            «Entrega deseada» admite retrasos; «límite obligatorio» debe
+            cumplirse.
+          </p>
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="Pedidos y tiempos por recurso"
+          >
+            <table id="jobs">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+        <div class="solve-controls">
+          <label
+            >Prioridad<select id="objective">
+              <option value="tardiness_then_makespan">
+                Reducir retrasos; después, tiempo total
+              </option>
+              <option value="makespan_then_tardiness">
+                Reducir tiempo total; después, retrasos
+              </option>
+            </select></label
+          ><label
+            >Tiempo de búsqueda (segundos)<input
+              id="seconds"
+              type="number"
+              min="0.01"
+              step="any"
+              value="10"
+              required
+          /></label>
+          <div class="actions">
+            <button type="submit" class="primary">Calcular plan</button
+            ><button id="compare" type="button">Comparar prioridades</button
+            ><button id="save" type="button">Guardar problema</button
+            ><button id="export-problem" type="button">
+              Exportar problema
+            </button>
+          </div>
+        </div>
+      </form>
+      <section id="results" aria-labelledby="results-heading" hidden>
+        <div class="section-title">
+          <h2 id="results-heading">Resultado</h2>
+          <button id="export-run" type="button">Exportar resultado</button>
+        </div>
+        <div id="comparison"></div>
+        <div id="plans"></div>
+      </section>
+      <section aria-labelledby="history-heading">
+        <div class="section-title">
+          <h2 id="history-heading">Documentos guardados</h2>
+          <button id="refresh" type="button">Actualizar historial</button>
+        </div>
+        <div id="history"></div>
+      </section>
+      <details>
+        <summary>Qué representa este plan</summary>
+        <p>
+          Tiempos enteros, trabajos sin interrupciones y un pedido a la vez por
+          recurso. La separación por familia es un intervalo mínimo; no reserva
+          operarios ni representa un calendario de preparación. La solución se
+          comprueba independientemente del motor.
+        </p>
+        <p>
+          Óptimo: mejor resultado demostrado para este modelo. Factible: plan
+          válido sin demostrar que sea el mejor. Imposible: no hay plan en las
+          condiciones y horizonte del modelo. Inconcluso: la búsqueda no ha
+          determinado una solución.
+        </p>
+      </details>
+    </main>
+    <footer>Datos locales · Cálculo sin modelos de lenguaje</footer>
+  </body>
+</html>

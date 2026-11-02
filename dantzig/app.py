@@ -1,14 +1,19 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from . import service
 from .models import Problem, SolveRequest
+from .solver import VerificationError
 
 app = FastAPI(title="Dantzig's Hoard")
+static = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=static), name="static")
 
 
 @app.get("/")
 def home():
-    return RedirectResponse("/docs")
+    return FileResponse(static / "index.html")
 
 
 @app.get("/api/health")
@@ -39,9 +44,16 @@ def save(problem: Problem):
     return service.save_problem(problem.model_dump())
 
 
+@app.post("/api/validate")
+def validate(problem: Problem):
+    return problem.model_dump()
+
+
 @app.post("/api/solve")
 def solve(request: SolveRequest):
     try:
         return service.solve_problem(request.problem.model_dump(), request.seconds)
     except ValueError as error:
         raise HTTPException(422, str(error))
+    except VerificationError as error:
+        raise HTTPException(500, str(error))
