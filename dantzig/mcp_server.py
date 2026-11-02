@@ -1,6 +1,7 @@
 """Static discovery; neither import nor tools/list opens the database."""
 from mcp.server.mcpserver import MCPServer
 from . import service
+from .configurator.mcp_tools import register as register_configurator
 
 mcp = MCPServer("Dantzig's Hoard")
 
@@ -33,6 +34,9 @@ def dantzig_records() -> list[dict]:
 def dantzig_record(record_id: str) -> dict:
     """Read/export a saved problem or run, including original assumptions."""
     return service.load(record_id)
+
+
+register_configurator(mcp)
 
 
 if __name__ == "__main__":

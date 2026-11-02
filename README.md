@@ -29,3 +29,18 @@ Cada solución se comprueba fuera del solver: presencia de todos los trabajos, r
 Instalar `pytest httpx` y ejecutar `python -m pytest -q`. Primera entrega:21 pruebas, incluidos12 problemas inventados comparados con enumeración independiente, caso investigado de6pedidos, imposibilidad, precedencias, entrada inválida, persistencia/API y cliente MCP stdio real. Navegador Brave: petición POST real de2pedidos devuelve óptimo, precedencia y retraso0. Los casos no representan una fábrica real.
 
 El motor usa OR-Tools9.15 en proceso, biblioteca Apache2.0 de Google; no ejecuta una CLI externa. Procedencia: https://developers.google.com/optimization/scheduling/job_shop . Las dependencias y sus licencias conservan su identidad; este repositorio define sus modelos, servicio, datos y contrato de herramientas.
+
+## Configurador
+
+Segundo módulo (tarea1939 del espacio `dantzig`): catálogos de componentes con compatibilidades cruzadas. Página `/configurator`, API `/api/configurator/*`, nueve herramientas MCP `dantzig_config_*`. Mismo motor CP-SAT en proceso y misma base SQLite (registros `catalog` y `config_run`).
+
+- Catálogo: huecos (`slots`) obligatorios u opcionales, opciones con precio, cantidad, existencias y atributos; reglas `requires`, `excludes`, `compare` (atributo frente a atributo de otro hueco o constante, con factor y desplazamiento) y `sum` (suma de un atributo frente a una constante o al atributo de otro hueco). Ejemplo incluido: `drive-kit`, kit de accionamiento inventado.
+- `propagate`: para cada hueco, qué opciones siguen siendo posibles con el resto de elecciones, cuáles quedan obligadas y si las elecciones encajan juntas.
+- `complete`: rellena lo que falta con objetivo lexicográfico (`price`, `count` o cualquier atributo numérico, `min`/`max`) y devuelve lista de materiales.
+- `repair`: cambia el menor número de elecciones (varias a la vez si hace falta) y después optimiza; lista los cambios y los conflictos de partida.
+- `explain`: todos los conjuntos mínimos de elecciones incompatibles con las reglas mínimas (o la falta de existencias) que los causan; `exhaustive` indica si puede haber más.
+- `verify`: contrasta `complete` y `repair` con enumeración exhaustiva independiente (hasta 250.000 combinaciones).
+
+Estados: `optimal`, `feasible` (válido sin prueba de óptimo), `infeasible` (demostrado imposible), `inconclusive` (sin respuesta en el tiempo dado). La compatibilidad es lógica: no sustituye un cálculo físico ni de resistencia.
+
+Pruebas: `tests/test_configurator.py`, 55 casos; 40 catálogos aleatorios contrastados con enumeración en comprobación, completado, reparación y explicación; conflictos mínimos comprobados exhaustivamente; caso que exige cambiar dos elecciones a la vez; API y MCP stdio real.

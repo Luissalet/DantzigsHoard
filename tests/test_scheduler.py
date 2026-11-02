@@ -96,7 +96,7 @@ async def test_real_mcp_stdio(tmp_path):
         async with ClientSession(read,write) as session:
             await session.initialize()
             tools=await session.list_tools()
-            assert len(tools.tools)==5
+            assert {"dantzig_example","dantzig_save_problem","dantzig_solve","dantzig_records","dantzig_record"} <= {t.name for t in tools.tools}
             assert not (tmp_path/'mcp').exists()
             r=await session.call_tool('dantzig_solve',{'problem':example(),'seconds':5})
             assert not r.is_error
