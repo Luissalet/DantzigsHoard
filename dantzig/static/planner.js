@@ -402,7 +402,7 @@ function download(value, name) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 async function history() {
-  const items = await api("/api/records");
+  const items = (await api("/api/records")).filter(item => ["problem", "run"].includes(item.kind));
   const target = $("history");
   target.replaceChildren();
   if (!items.length) {
