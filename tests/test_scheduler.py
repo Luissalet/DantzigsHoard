@@ -103,6 +103,9 @@ def test_http_persistence_reopen_and_export(tmp_path,monkeypatch):
         assert rejected.status_code==422 and 'cíclicas' in rejected.text
         assert c.get('/').status_code==200
         assert c.get('/static/planner.js').status_code==200
+        assert '/api/copilot/launcher.js' in c.get('/').text
+        launcher=c.get('/api/copilot/launcher.js')
+        assert launcher.status_code==200 and 'Faustus' in launcher.text
     with TestClient(app) as c:
         assert len(c.get('/api/records').json())==2
 

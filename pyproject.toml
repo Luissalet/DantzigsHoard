@@ -7,13 +7,14 @@ name = "dantzig-hoard"
 version = "0.1.0"
 description = "Local resource scheduling with explicit constraints"
 requires-python = ">=3.11"
-dependencies = ["ortools==9.15.6755", "fastapi==0.162.0", "uvicorn==0.54.0", "mcp==2.3.0"]
+dependencies = ["ortools==9.15.6755", "fastapi==0.162.0", "uvicorn==0.54.0", "mcp==2.3.0", "httpx==0.28.1"]
 
 [tool.setuptools.packages.find]
 include = ["dantzig*"]
 
 [tool.setuptools.package-data]
 dantzig = ["static/*", "configurator/static/*"]
+"dantzig.hoard_link" = ["LICENSE", "VENDORED.txt", "_data/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

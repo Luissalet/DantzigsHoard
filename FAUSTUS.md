@@ -15,3 +15,7 @@ Coordinación: dantzig1938 y1939, programa ecosystem1937. Investigación: E:/Dev
 Herramientas: `dantzig_config_examples`, `dantzig_config_example`, `dantzig_config_save_catalog`, `dantzig_config_catalogs`, `dantzig_config_propagate`, `dantzig_config_complete`, `dantzig_config_repair`, `dantzig_config_explain`, `dantzig_config_verify`. Aceptan `catalog_id` (guardado o de ejemplo, p. ej. `drive-kit`) o `catalog` en línea y `selections` `{hueco: opción | null}`.
 
 Para un encargo de configurador: formular el catálogo como JSON (huecos, opciones con atributos, reglas requires/excludes/compare/sum), guardarlo, usar propagate mientras se elige, complete para cerrar, repair cuando el cliente pide algo imposible y explain para justificarlo. Con catálogos pequeños, verify demuestra el resultado por enumeración. Página para Luis: `/configurator`.
+
+## Candidato de familia1941
+
+Copilotocomún incorporado con biblioteca canónica; /api/copilot/info y launcher200, panel abierto enBrave sin invocar modelo. Contexto propio del borrador definido en window.hoardCopilot. Se ha comprobado la definición en código; el evaluador de navegador no expone ese global para leerlo, por tanto no se afirma lectura viva de ese objeto. Manifiesto arrancable y puerto adaptable, validado con parser real delHub. RegistroHub y conexión operativa del panel con las herramientas pendientes de revisión/integración. MCPstdio sigue siendo el acceso de herramientas probado.
