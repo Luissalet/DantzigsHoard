@@ -13,7 +13,7 @@ dependencies = ["ortools==9.15.6755", "fastapi==0.162.0", "uvicorn==0.54.0", "mc
 include = ["dantzig*"]
 
 [tool.setuptools.package-data]
-dantzig = ["static/*"]
+dantzig = ["static/*", "configurator/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

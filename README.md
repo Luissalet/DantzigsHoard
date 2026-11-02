@@ -32,7 +32,7 @@ El motor usa OR-Tools9.15 en proceso, biblioteca Apache2.0 de Google; no ejecuta
 
 ## Configurador
 
-Segundo módulo (tarea1939 del espacio `dantzig`): catálogos de componentes con compatibilidades cruzadas. Página `/configurator`, API `/api/configurator/*`, nueve herramientas MCP `dantzig_config_*`. Mismo motor CP-SAT en proceso y misma base SQLite (registros `catalog` y `config_run`).
+Segundo módulo (tarea1939 del espacio `dantzig`): catálogos de componentes con compatibilidades cruzadas. Página `/configurator` (servida por el propio módulo desde `dantzig/configurator/static`), API `/api/configurator/*`, nueve herramientas MCP `dantzig_config_*`. Mismo motor CP-SAT en proceso y misma base SQLite (registros `catalog` y `config_run`).
 
 - Catálogo: huecos (`slots`) obligatorios u opcionales, opciones con precio, cantidad, existencias y atributos; reglas `requires`, `excludes`, `compare` (atributo frente a atributo de otro hueco o constante, con factor y desplazamiento) y `sum` (suma de un atributo frente a una constante o al atributo de otro hueco). Ejemplo incluido: `drive-kit`, kit de accionamiento inventado.
 - `propagate`: para cada hueco, qué opciones siguen siendo posibles con el resto de elecciones, cuáles quedan obligadas y si las elecciones encajan juntas.
