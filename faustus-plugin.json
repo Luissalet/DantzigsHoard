@@ -15,7 +15,11 @@
     "compatibility-propagation",
     "minimal-repair",
     "conflict-explanation",
-    "bill-of-materials"
+    "bill-of-materials",
+    "planning-editor",
+    "schedule-comparison",
+    "schedule-timeline",
+    "problem-validation"
   ],
   "placeholders": [
     "DANTZIG_DIR",
@@ -28,7 +32,7 @@
   },
   "app": {
     "url_default": "http://127.0.0.1:5241",
-    "ui_url": "{APP_URL}/docs",
+    "ui_url": "{APP_URL}/",
     "health": {
       "path": "/api/health",
       "expect": {
@@ -48,5 +52,5 @@
       "DANTZIG_DATA": "{DANTZIG_DIR}/data"
     }
   },
-  "notes": "Candidate manifest, not registered in Hub. Explicit startup only. Current web entry is technical API documentation; planner UI and shared copilot are pending."
+  "notes": "Candidate planner UI and staged solver awaiting review. Configurator revision2 has requested changes. Explicit startup only; Hub registration and shared copilot pending."
 }

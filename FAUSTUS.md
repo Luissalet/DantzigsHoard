@@ -1,14 +1,14 @@
 # Dantzig · capacidades actuales
 
-Primera entrega1938 en worktree, pendiente de revisión e integración. No tratar el manifiesto como instalación terminada.
+Motor1938r1 integrado y aprobado. Candidato1938r2 añade el editor de planificación y resolución lexicográfica en dos etapas; pendiente de revisión/integración. Configurador1939r2 integrado por su autor, con cambios pedidos por revisión: no tratarlo como entrega aprobada.
 
-Cinco herramientas nativas: `dantzig_example`, `dantzig_save_problem`, `dantzig_solve`, `dantzig_records`, `dantzig_record`. Usan el mismo servicio que HTTP, sin iniciar un servidor como efecto de descubrimiento. Datos locales mediante DANTZIG_DATA. Los cálculos no necesitan Sparks ni GPU.
+Seis herramientas nativas de planificación: dantzig_validate, dantzig_example, dantzig_save_problem, dantzig_solve, dantzig_records, dantzig_record. Comparten servicio con HTTP. Descubrimiento/validación no inician HTTP ni abren datos. Sin Sparks ni GPU para calcular.
 
-Resolver: recursos alternativos exclusivos, duración entera, disponibilidad, precedencias, fechas deseadas/obligatorias, prioridades y separación mínima por familia. Informar el estado devuelto: sólo optimal demuestra óptimo, unknown no demuestra imposibilidad. Leer README para el alcance exacto de los cambios de familia y objetivo.
+Interfaz candidata: editor de recursos/pedidos, Gantt más tabla, comparación de objetivos, historial propio, importación/exportaciónJSON y borrador persistente. Estados optimal/feasible/infeasible/unknown. Objetivos y alcance detallados en README. Los ciclos de precedencia se rechazan explícitamente; no interpretar unknown como imposible.
 
-Verificación actual:21 pruebas positivas con MCP stdio real y API;12 contrastes independientes exhaustivos; ejecución POST desde Brave sobre datos QA. Interfaz normal de planificación, copilot común, icono, catálogo Hub y despliegue quedan pendientes. La página inicial redirige a la documentación interactiva técnica. No afirmar que hay Gantt o editor de pedidos.
+Verificación del candidato compuesto:77pruebas, MCPstdio real,24contrastes de objetivos y regresión de tiempos grandes. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad y recarga de borrador incompleto. Vista390px comprobada. Copilot común, icono y registroHub pendientes.
 
-Coordinación: espacio dantzig, tarea1938; programa ecosystem1937. Investigación persistente: E:/Development/IA/Research/Hangar-2026-11-02.
+Coordinación: dantzig1938 y1939, programa ecosystem1937. Investigación: E:/Development/IA/Research/Hangar-2026-11-02.
 
 ## Configurador (tarea1939)
 
