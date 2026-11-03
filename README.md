@@ -1,5 +1,7 @@
 # Dantzig's Hoard
 
+`dantzig_example` y `dantzig_validate` declaran `readOnlyHint=true` en MCP: consultan datos inventados y validan entradas sin crear almacenamiento. Faustus puede descubrirlas en modo Plan. Las operaciones que guardan problemas, resultados o exportaciones conservan su clasificación de escritura. La anotación describe el servicio existente; no cambia el cálculo ni la política de permisos de Faustus.
+
 Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y siete herramientas MCP de planificación.
 
 Estado: motor/API/MCP inicial integrado con aprobación de1938r1. El configurador1939r3 está aprobado e integrado en Main (7c46280). El candidato1938r3 incorpora editor de pedidos, recursos, cronogramas, comparación, importación/exportación e historial, con el tema oscuro común y el icono de familia corregido. La revisión1938r2 aprobó el funcionamiento y pidió corregir el tema visual; la nueva entrega necesita revisión e integración. Copilot común1941 aprobado, pendiente de integrar junto al planificador. Registro Hub pendiente. Arranque explícito, sin consultas a modelos.

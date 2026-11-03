@@ -1,12 +1,13 @@
 """Static discovery; neither import nor tools/list opens the database."""
 from mcp.server.mcpserver import MCPServer
+from mcp_types import ToolAnnotations
 from . import service
 from .configurator.mcp_tools import register as register_configurator
 
 mcp = MCPServer("Dantzig's Hoard")
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 def dantzig_validate(problem: dict) -> dict:
     """Validate and normalize a scheduling problem without saving or solving it."""
     return service.Problem.model_validate(problem).model_dump()
@@ -18,7 +19,7 @@ def dantzig_export(document: dict | list[dict], kind: str = "problem") -> dict:
     return service.export_document(document, kind)
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 def dantzig_example() -> dict:
     """Get an invented six-job problem and all explicit model fields."""
     return service.example()
