@@ -1,5 +1,7 @@
 # Dantzig · capacidades actuales
 
+MCP: `dantzig_example` y `dantzig_validate` declaran lectura pura para su descubrimiento en modo Plan. No crean datos. Guardar, resolver y exportar siguen siendo operaciones persistentes; no se marcan como lectura.
+
 Motor1938r1 integrado y aprobado. Configurador1939r3 aprobado e integrado en7c46280. Candidato1938r3 añade editor de planificación, resolución lexicográfica en dos etapas y tema oscuro común; corrige los cambios visuales pedidos en1938r2, cuyo funcionamiento está aprobado. Pendiente de nueva revisión/integración.
 
 Siete herramientas nativas de planificación: dantzig_validate, dantzig_export, dantzig_example, dantzig_save_problem, dantzig_solve, dantzig_records, dantzig_record. Comparten servicio con HTTP. Descubrimiento/validación no inician HTTP ni abren datos. Sin Sparks ni GPU para calcular.
