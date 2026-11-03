@@ -1,6 +1,6 @@
 # Próximas entregas
 
-1. Completar la comprobación operativa del registro en Hub y la conexión de herramientas de Faustus; no inferirla del manifiesto o de abrir el panel.
+1. Ampliar la prueba operativa a encargos de varios Hoards. Ya verificados Hub, conector Faustus y un turno real que leyó/validó un ejemplo por MCP; ese caso no acredita toda clase de encargos.
 2. Ampliar calendarios con recurrencia semanal y un origen temporal real explícito; decidir cómo se representa el cambio de hora antes de mezclar duraciones y horas locales.
 3. Recursos compartidos adicionales (operarios y útiles) y preparaciones que ocupen recursos; conservar verificador independiente y semántica explícita.
 4. Configuración: cantidades variables por hueco, elecciones múltiples, geometría paramétrica con Vulcan y reglas leídas de una hoja.
