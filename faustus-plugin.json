@@ -75,7 +75,7 @@
       "DANTZIG_DATA": "{DANTZIG_DIR}/data"
     }
   },
-  "notes": "Explicit startup only. MCP stdio uses the shared native service; discovery starts no app. Copilot uses the canonical family relay, without a separate conversation loop. Planner and family integration candidates awaiting review; configurator has requested changes.",
+  "notes": "Explicit startup only. MCP stdio exposes the native planner, resource calendars and finite configurator; discovery starts no HTTP app. Copilot uses the canonical family relay, without a separate conversation loop. Review and integration states are recorded in the dantzig Agora space.",
   "x-family": {
     "copilot": {
       "contract_version": "1.0",

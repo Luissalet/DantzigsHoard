@@ -1,9 +1,8 @@
 # Próximas entregas
 
-1. Motor/API/MCP inicial integrado con revisión1938r1; conservar evidencia.
-2. Interfaz de planificación y solver en dos etapas construidos y probados; revisión funcional1938r2 aprobada, tema oscuro e icono corregidos en1938r3. Revisar nueva entrega e integrar.
-3. Candidato1941 aprobado: integrar copilot común y manifiesto junto al planificador, registrarHub y verificar conexión de herramientas. Proyecto Faustus ya enlazado.
-4. Calendarios1980 construidos y probados: periodos sin disponibilidad por recurso, API/MCP/editor/cronograma,117tests combinados. Revisar e integrar detrás de1938/1942. Quedan recurrencia semanal, operarios compartidos y preparaciones ocupadas, con semántica explícita y verificador independiente.
-5. Configuración consistente1939r3 aprobada e integrada (propagar, completar, reparar, explicar, verificar, BOM, página /configurator). Siguiente: cantidades variables por hueco (p. ej. juntas según longitud), elecciones múltiples por hueco, geometría paramétrica con Vulcan y reglas leídas de una hoja.
+1. Completar la comprobación operativa del registro en Hub y la conexión de herramientas de Faustus; no inferirla del manifiesto o de abrir el panel.
+2. Ampliar calendarios con recurrencia semanal y un origen temporal real explícito; decidir cómo se representa el cambio de hora antes de mezclar duraciones y horas locales.
+3. Recursos compartidos adicionales (operarios y útiles) y preparaciones que ocupen recursos; conservar verificador independiente y semántica explícita.
+4. Configuración: cantidades variables por hueco, elecciones múltiples, geometría paramétrica con Vulcan y reglas leídas de una hoja.
 
-El programa completo vive en ecosystem1937. No implica que las17capacidades de la segunda investigación estén implementadas.
+La evidencia del motor, editor, exportación, configurador y calendarios se conserva en las tareas1938/1939/1941/1942/1980 y en Research. El programa completo vive en ecosystem1937; no implica que las17capacidades de la segunda investigación estén implementadas.
