@@ -22,6 +22,12 @@ const setDuration = (job, resource, value) =>
     enumerable: true,
     configurable: true,
   });
+const setWindows = (resource, value) =>
+  Object.defineProperty(problem.unavailability, resource, {
+    value, writable: true, enumerable: true, configurable: true,
+  });
+const windows = (map, resource) =>
+  map && Object.hasOwn(map, resource) ? map[resource] : [];
 function editable(value) {
   return (
     value &&
@@ -29,6 +35,11 @@ function editable(value) {
     typeof value.unit === "string" &&
     Array.isArray(value.resources) &&
     value.resources.every((r) => typeof r === "string") &&
+    (value.unavailability === undefined ||
+      (value.unavailability && typeof value.unavailability === "object" &&
+       !Array.isArray(value.unavailability) &&
+       Object.values(value.unavailability).every((items) => Array.isArray(items) &&
+         items.every((w) => w && typeof w === "object" && "start" in w && "end" in w)))) &&
     Array.isArray(value.jobs) &&
     value.jobs.every(
       (j) =>
@@ -110,6 +121,7 @@ function cellInput(row, value, label, type, update) {
   return input;
 }
 function render() {
+  problem.unavailability ??= {};
   $("name").value = problem.name;
   $("unit").value = problem.unit;
   $("change").value = problem.family_change;
@@ -130,6 +142,7 @@ function render() {
         message("Cada recurso necesita un nombre distinto y no vacío.", true);
         return;
       }
+      if (next === resource) return;
       problem.resources = problem.resources.map((r) =>
         r === resource ? next : r,
       );
@@ -138,6 +151,10 @@ function render() {
           setDuration(j, next, j.durations[resource]);
           delete j.durations[resource];
         }
+      if (Object.hasOwn(problem.unavailability, resource)) {
+        setWindows(next, problem.unavailability[resource]);
+        delete problem.unavailability[resource];
+      }
       changed();
       render();
     });
@@ -148,10 +165,55 @@ function render() {
     remove.onclick = () => {
       problem.resources = problem.resources.filter((r) => r !== resource);
       for (const j of problem.jobs) delete j.durations[resource];
+      delete problem.unavailability[resource];
       changed();
       render();
     };
     group.append(remove);
+    const calendar = node("details", undefined, "resource-calendar");
+    const periods = windows(problem.unavailability, resource);
+    calendar.open = periods.length > 0;
+    calendar.append(node("summary", `Sin disponibilidad (${periods.length})`));
+    const table = node("table");
+    const thead = node("thead");
+    const headings = node("tr");
+    for (const title of ["Inicio", "Fin", "Acciones"]) headings.append(node("th", title));
+    thead.append(headings);
+    table.append(thead);
+    const tbody = node("tbody");
+    periods.forEach((period, index) => {
+      const row = node("tr");
+      for (const field of ["start", "end"]) {
+        const input = cellInput(row, period[field],
+          `${field === "start" ? "Inicio" : "Fin"} del periodo ${index + 1} en ${resource}`,
+          "number", (v) => (period[field] = number(v)));
+        input.required = true;
+        if (field === "end") input.min = "1";
+      }
+      const td = node("td");
+      const drop = node("button", "Retirar");
+      drop.type = "button";
+      drop.setAttribute("aria-label", `Retirar periodo ${index + 1} en ${resource}`);
+      drop.onclick = () => {
+        periods.splice(index, 1);
+        changed();
+        render();
+      };
+      td.append(drop);
+      row.append(td);
+      tbody.append(row);
+    });
+    table.append(tbody);
+    const add = node("button", "Añadir periodo");
+    add.type = "button";
+    add.setAttribute("aria-label", `Añadir periodo sin disponibilidad en ${resource}`);
+    add.onclick = () => {
+      setWindows(resource, [...periods, { start: 0, end: 1 }]);
+      changed();
+      render();
+    };
+    calendar.append(table, add);
+    group.append(calendar);
     $("resources").append(group);
   }
   const head = node("tr");
@@ -312,6 +374,15 @@ function drawPlan(run) {
     const lane = node("div", undefined, "lane");
     lane.append(node("span", resource));
     const track = node("div", undefined, "track");
+    for (const period of windows(run.problem.unavailability, resource)) {
+      const end = Math.min(period.end, r.makespan);
+      if (period.start >= end) continue;
+      const block = node("span", undefined, "unavailable");
+      block.style.left = `${(100 * period.start) / r.makespan}%`;
+      block.style.width = `${(100 * (end - period.start)) / r.makespan}%`;
+      block.title = `Sin disponibilidad: ${period.start}–${period.end} ${r.unit}`;
+      track.append(block);
+    }
     for (const row of r.schedule
       .filter((x) => x.resource === resource)
       .sort((a, b) => a.start - b.start)) {
@@ -325,6 +396,11 @@ function drawPlan(run) {
     timeline.append(lane);
   }
   section.append(timeline);
+  const calendarText = node("ul", undefined, "calendar-summary");
+  for (const resource of run.problem.resources)
+    for (const period of windows(run.problem.unavailability, resource))
+      calendarText.append(node("li", `${resource}: sin disponibilidad ${period.start}–${period.end} ${r.unit}`));
+  if (calendarText.childElementCount) section.append(calendarText);
   const wrap = node("div", undefined, "table-scroll");
   const table = node("table");
   const header = node("tr");

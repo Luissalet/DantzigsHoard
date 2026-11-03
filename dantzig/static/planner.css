@@ -330,6 +330,18 @@ tbody tr:last-child td {
   border-bottom: 1px solid var(--line);
   padding: 14px 0;
 }
+.resource { flex-wrap: wrap; }
+.resource-calendar { flex-basis: 100%; margin: 0; max-width: 100%; }
+.resource-calendar table { table-layout: fixed; margin: 8px 0; }
+.resource-calendar input { min-width: 0; width: 100%; }
+.resource-calendar td, .resource-calendar th { padding: 4px; }
+.unavailable {
+  position: absolute;
+  inset-block: 0;
+  background: repeating-linear-gradient(135deg, var(--hoard-border) 0 4px, transparent 4px 8px);
+  border: 1px solid var(--hoard-text-muted);
+}
+.calendar-summary { color: var(--muted); font-size: 13px; }
 .history-row small {
   display: block;
   color: var(--muted);

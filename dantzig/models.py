@@ -20,11 +20,23 @@ class Job(Record):
     after: list[str] = Field(default_factory=list)
 
 
+class Unavailable(Record):
+    start: Nonnegative
+    end: Positive
+
+    @model_validator(mode="after")
+    def interval(self):
+        if self.end <= self.start:
+            raise ValueError("El fin del periodo sin disponibilidad debe ser posterior al inicio")
+        return self
+
+
 class Problem(Record):
     name: str = Field(min_length=1)
     unit: str = "minutos"
     resources: list[str] = Field(min_length=1)
     jobs: list[Job] = Field(min_length=1)
+    unavailability: dict[str, list[Unavailable]] = Field(default_factory=dict)
     family_change: Nonnegative = 0
     horizon: Positive | None = None
     objective: Literal["tardiness_then_makespan", "makespan_then_tardiness"] = "tardiness_then_makespan"
@@ -36,6 +48,8 @@ class Problem(Record):
             raise ValueError("Los identificadores de trabajos y recursos deben ser únicos")
         if any(not r.strip() for r in self.resources):
             raise ValueError("Cada recurso necesita un nombre")
+        if set(self.unavailability) - set(self.resources):
+            raise ValueError("Periodo sin disponibilidad para un recurso desconocido")
         for j in self.jobs:
             if set(j.durations) - set(self.resources):
                 raise ValueError(f"{j.id}: duración para un recurso desconocido")

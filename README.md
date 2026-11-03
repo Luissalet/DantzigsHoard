@@ -22,7 +22,7 @@ El cuerpo de solve es `{ "problem": <problema de /api/example>, "seconds": 10 }`
 - Objetivo: retraso ponderado primero y finalización después, o el orden inverso. Se resuelven dos etapas: se fija el primer objetivo sólo si su óptimo está demostrado y se optimiza después el segundo. Ambas comparten el presupuesto temporal; agotar la segunda conserva el plan de la primera como factible.
 - `optimal` acredita óptimo del modelo; `feasible` conserva un plan comprobado sin prueba de óptimo; `infeasible` acredita incompatibilidad del modelo; `unknown` no acredita imposibilidad. `objective_bounds.primary/secondary` contienen las cotas por objetivo en ese orden. El antiguo `objective_bound` permanece como null para compatibilidad; ya no se utiliza la combinación escalada. Los ciclos de precedencia se rechazan con un mensaje propio.
 
-Cada solución se comprueba fuera del solver: presencia de todos los trabajos, recurso/duración, disponibilidad, precedencias, fechas obligatorias, horizonte, exclusión y separación de familias. No se han modelado calendarios, operarios compartidos, interrupciones, rutas ni inventario.
+Cada solución se comprueba fuera del solver: presencia de todos los trabajos, recurso/duración, disponibilidad, precedencias, fechas obligatorias, horizonte, exclusión y separación de familias. El candidato1980 incorpora periodos sin disponibilidad por recurso, descritos abajo. No se han modelado operarios compartidos, interrupciones, rutas ni inventario.
 
 ## Verificación
 
@@ -64,3 +64,13 @@ El manifiesto incluye arranque explícito desdeHub, comprobación de salud y ada
 POST /api/exports conserva una instantánea JSON y devuelve un enlace GET /api/exports/{id} con Content-Disposition attachment. La UI ofrece ese enlace visible; ya no utiliza direcciones Blob. dantzig_export realiza la misma preparación por MCP sin iniciar servidor. Los documentos pueden recuperarse mediante dantzig_record; el historial de planificación conserva sus tipos problem/run y no mezcla exportaciones o catálogos. Las pruebas HTTP verifican bytes semánticos, Unicode, enteros grandes, cabecera y recuperación tras reabrir.
 
 Selector de archivos de Brave: fixture propia importada y validada correctamente. La captura del evento download no pudo certificar el guardado en disco. El acceso al gestor interno de descargas fue rechazado por la política del navegador y no se reintentó por otra superficie; no confundir la preparación y respuesta HTTP con un archivo verificado en la carpeta de descargas.
+
+## Calendarios de recursos (candidato1980)
+
+Un problema puede incluir `unavailability: {"Torno": [{"start": 10, "end": 20}]}`. Inicio y fin son enteros en la misma unidad y origen que los pedidos. Los intervalos son semiabiertos: un pedido puede terminar a las10 o empezar a las20, pero no atravesar el cierre. Los periodos solapados o contiguos se unen para el cálculo, conservando la entrada original en problemas y ejecuciones. Sin este campo, los documentos anteriores conservan su comportamiento.
+
+El horizonte automático deja espacio para un plan serial después del último cierre y de la última liberación. Si se declara un horizonte explícito, el calendario se recorta a ese horizonte para construir el modelo; no amplía el límite elegido. La separación de familias sigue siendo tiempo transcurrido, no una preparación ocupada: puede transcurrir durante un cierre.
+
+El editor permite añadir y retirar periodos por recurso y los representa rayados en el cronograma, con una lista textual equivalente. Renombrar o retirar un recurso actualiza su calendario. Los borradores incompletos también se conservan al recargar. API y MCP usan el mismo modelo; `dantzig_validate` y `dantzig_solve` documentan el campo.
+
+Esta rama contiene117pruebas positivas: las92anteriores y25de calendarios, con24contrastes exhaustivos independientes (12casos por dos objetivos), ventanas solapadas, límites semiabiertos, precedencias/cambio de familia, recursos alternativos, persistenciaHTTP y MCPstdio real. Brave: cierre10–20 → plan32; segundo cierre15–25 → plan37; renombrado Unicode y recarga de periodo incompleto conservados. Vista390px/page380px sin desbordamiento global. Capturas en el archivo de investigación. Depende de1938r4/1942r2; no se integra ni se presenta como disponible antes de aprobar ambas bases y esta entrega.

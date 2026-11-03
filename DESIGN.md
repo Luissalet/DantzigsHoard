@@ -11,3 +11,5 @@ El cronograma lleva recursos, intervalos, trabajo y escala temporal. La tabla es
 Vista móvil: condiciones en una columna, tabla desplazable y cronograma conservan su semántica; acciones se ajustan. Mostrar errores junto al flujo, conservar entradas y ofrecer reintento. El resultado guardado incluye su problema original.
 
 Icono: conservar la silueta del dragón de familia. Luis rechazó el primer dragón inventado el03-11-2026. Sustituido con una edición referenciada en Coase/Vitruvius: dragón común jade y símbolo dorado de optimización. Maestro en Icons/Dantzig hoard.png; app-icon.png y static/app-icon.png con los mismos bytes. Prompt y referencias en ICONO-DANTZIG-V2.json del archivo de investigación.
+
+Calendarios1980: cada recurso conserva nombre y retirada y añade un desplegable «Sin disponibilidad», con inicio/fin/retirada por periodo. El cronograma muestra cierres rayados y una lista textual; no depende solo del color. No introducir fechas de calendario distintas del origen temporal elegido para los pedidos. Móvil390px probado sin desbordamiento global; tablas de pedidos y cronograma conservan desplazamiento propio.

@@ -8,7 +8,7 @@ mcp = MCPServer("Dantzig's Hoard")
 
 @mcp.tool()
 def dantzig_validate(problem: dict) -> dict:
-    """Validate and normalize a scheduling problem without saving or solving it."""
+    """Validate and normalize a scheduling problem, including unavailability {resource:[{start,end}]}, without saving or solving it."""
     return service.Problem.model_validate(problem).model_dump()
 
 
@@ -32,7 +32,7 @@ def dantzig_save_problem(problem: dict) -> dict:
 
 @mcp.tool()
 def dantzig_solve(problem: dict, seconds: float = 10) -> dict:
-    """Schedule alternative resources, release dates, deadlines, precedence and family changes. Returns optimal/feasible/infeasible/unknown and persists the exact input with its result."""
+    """Schedule alternative resources, release dates, deadlines, precedence, family changes and unavailability {resource:[{start,end}]}. Unavailable periods are half-open, jobs cannot cross them. Returns optimal/feasible/infeasible/unknown and persists the exact input with its result."""
     return service.solve_problem(problem, seconds)
 
 
