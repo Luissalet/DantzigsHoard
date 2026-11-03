@@ -77,6 +77,7 @@ def test_large_horizon_avoids_lexicographic_scaling_overflow():
         assert r['weighted_tardiness']==1_999_999_999_000
         assert r['objective_bound'] is None
         assert r['objective_bounds']['secondary'] is not None
+        assert all(isinstance(v,int) for v in r['objective_bounds'].values())
 
 
 @pytest.mark.parametrize('mutate', [lambda p:p.update(extra=True), lambda p:p['jobs'][0]['durations'].update({'Máquina 1': True}), lambda p:p['jobs'][0].update(after=['missing']),lambda p:p['resources'].append(p['resources'][0])])
@@ -102,6 +103,10 @@ def test_http_persistence_reopen_and_export(tmp_path,monkeypatch):
         rejected=c.post('/api/validate',json=p)
         assert rejected.status_code==422 and 'cíclicas' in rejected.text
         assert c.get('/').status_code==200
+        html=c.get('/').text
+        assert 'data-hoard-app="dantzig"' in html
+        assert html.index('/static/hoard-theme.css') < html.index('/static/planner.css')
+        assert c.get('/static/app-icon.png').content.startswith(b'\x89PNG\r\n\x1a\n')
         assert c.get('/static/planner.js').status_code==200
         assert '/api/copilot/launcher.js' in c.get('/').text
         launcher=c.get('/api/copilot/launcher.js')

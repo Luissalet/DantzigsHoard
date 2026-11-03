@@ -1,12 +1,12 @@
 # Dantzig · capacidades actuales
 
-Motor1938r1 integrado y aprobado. Candidato1938r2 añade el editor de planificación y resolución lexicográfica en dos etapas; pendiente de revisión/integración. Configurador1939r2 integrado por su autor, con cambios pedidos por revisión: no tratarlo como entrega aprobada.
+Motor1938r1 integrado y aprobado. Configurador1939r3 aprobado e integrado en7c46280. Candidato1938r3 añade editor de planificación, resolución lexicográfica en dos etapas y tema oscuro común; corrige los cambios visuales pedidos en1938r2, cuyo funcionamiento está aprobado. Pendiente de nueva revisión/integración.
 
 Siete herramientas nativas de planificación: dantzig_validate, dantzig_export, dantzig_example, dantzig_save_problem, dantzig_solve, dantzig_records, dantzig_record. Comparten servicio con HTTP. Descubrimiento/validación no inician HTTP ni abren datos. Sin Sparks ni GPU para calcular.
 
 Interfaz candidata: editor de recursos/pedidos, Gantt más tabla, comparación de objetivos, historial propio, importación/exportaciónJSON y borrador persistente. Estados optimal/feasible/infeasible/unknown. Objetivos y alcance detallados en README. Los ciclos de precedencia se rechazan explícitamente; no interpretar unknown como imposible.
 
-Verificación del candidato compuesto:77pruebas, MCPstdio real,24contrastes de objetivos y regresión de tiempos grandes. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad y recarga de borrador incompleto. Vista390px comprobada. Copilot común, icono y registroHub pendientes.
+Verificación del candidato compuesto:92pruebas, MCPstdio real,24contrastes de objetivos y regresión de tiempos grandes; revisión independiente1938r2 con300 casos adicionales. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad, importación y recarga de borrador incompleto. Vista oscura390px comprobada. Icono corregido a partir del dragón común, sustituyendo el rechazado por Luis. Copilot común1941 aprobado, pendiente de integrar junto al planificador; registroHub pendiente.
 
 Coordinación: dantzig1938 y1939, programa ecosystem1937. Investigación: E:/Development/IA/Research/Hangar-2026-11-02.
 
