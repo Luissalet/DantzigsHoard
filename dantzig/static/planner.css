@@ -1,13 +1,13 @@
 :root {
-  color-scheme: light;
-  --paper: #f6f4ee;
-  --ink: #252b2a;
-  --muted: #59645f;
-  --line: #cbd0c8;
-  --accent: #87452e;
-  --green: #205840;
-  --surface: #fffefa;
-  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+  --paper: var(--hoard-deep);
+  --ink: var(--hoard-text);
+  --muted: var(--hoard-text-muted);
+  --line: var(--hoard-border);
+  --accent: var(--hoard-accent);
+  --green: var(--hoard-success);
+  --surface: var(--hoard-surface);
+  font-family: var(--hoard-font-sans);
   color: var(--ink);
   background: var(--paper);
   font-size: 15px;
@@ -22,17 +22,40 @@ header {
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 22px 4vw;
+  height: var(--hoard-header-h);
+  padding: 0 4vw;
   border-bottom: 1px solid var(--line);
 }
-header a:last-child {
-  margin-left: auto;
-}
+
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--hoard-font-serif);
   font-size: 21px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
-  color: var(--ink);
+  color: var(--accent);
+}
+.brand img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.app-nav {
+  height: 40px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  padding: 0 4vw;
+  border-bottom: 1px solid var(--line);
+}
+.app-nav a {
+  text-decoration: none;
+  color: var(--muted);
+}
+.app-nav a[aria-current] {
+  color: var(--accent);
 }
 header span {
   color: var(--muted);
@@ -43,6 +66,8 @@ main {
   padding: 30px 4vw 60px;
 }
 h1 {
+  font-family: var(--hoard-font-serif);
+  color: var(--accent);
   font-size: 30px;
   margin: 0;
   letter-spacing: -0.02em;
@@ -82,13 +107,13 @@ button,
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  border-radius: 5px;
+  border-radius: var(--hoard-radius-sm);
   cursor: pointer;
 }
 button:hover,
 .file:hover {
   border-color: var(--accent);
-  background: #eee9df;
+  background: var(--hoard-hover);
 }
 button:disabled {
   opacity: 0.55;
@@ -96,19 +121,19 @@ button:disabled {
 }
 .primary {
   background: var(--accent);
-  color: white;
+  color: var(--hoard-accent-ink);
   border-color: var(--accent);
 }
 .primary:hover {
-  background: #68331f;
-  color: white;
+  background: var(--hoard-accent-strong);
+  color: var(--hoard-accent-ink);
 }
 input,
 select {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: var(--hoard-radius-sm);
   padding: 9px;
   width: 100%;
   min-width: 0;
@@ -139,7 +164,7 @@ a {
   outline-offset: 3px;
 }
 ::selection {
-  background: #edd0bd;
+  background: var(--hoard-accent-soft);
   color: var(--ink);
 }
 .fields {
@@ -176,6 +201,7 @@ section {
   max-width: 100ch;
 }
 .table-scroll {
+  border-radius: var(--hoard-radius-lg);
   overflow: auto;
   border: 1px solid var(--line);
   margin-top: 14px;
@@ -233,7 +259,7 @@ tbody tr:last-child td {
   color: var(--green);
 }
 #notice.error {
-  color: #a12323;
+  color: var(--hoard-danger);
 }
 .plan {
   margin-top: 22px;
@@ -266,15 +292,15 @@ tbody tr:last-child td {
 .track {
   position: relative;
   height: 48px;
-  background: #e5e8df;
+  background: var(--hoard-sunken);
   border-radius: 3px;
 }
 .bar {
   position: absolute;
   top: 5px;
   height: 38px;
-  background: var(--green);
-  color: white;
+  background: var(--hoard-accent-dim);
+  color: var(--hoard-text);
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -284,7 +310,8 @@ tbody tr:last-child td {
   min-width: 2px;
 }
 .bar:nth-child(even) {
-  background: #4b6f5c;
+  background: var(--hoard-accent);
+  color: var(--hoard-accent-ink);
 }
 .ticks {
   display: flex;
@@ -356,7 +383,10 @@ footer {
     align-items: start;
   }
   header {
-    padding: 18px 16px;
+    padding: 0 16px;
+  }
+  .app-nav {
+    padding: 0 16px;
   }
   .resource label {
     max-width: 175px;

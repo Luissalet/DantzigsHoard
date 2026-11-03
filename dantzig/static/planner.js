@@ -256,8 +256,15 @@ function install(value) {
 }
 function formValid() {
   for (const input of $("planner").querySelectorAll('input[type="number"]')) {
-    const exact = input.id === "seconds" || input.value === "" || Number.isSafeInteger(Number(input.value));
-    input.setCustomValidity(exact ? "" : "Este entero no se puede representar sin perder cifras en el editor. Importa el documento desde una herramienta MCP o utiliza otra unidad de tiempo.");
+    const exact =
+      input.id === "seconds" ||
+      input.value === "" ||
+      Number.isSafeInteger(Number(input.value));
+    input.setCustomValidity(
+      exact
+        ? ""
+        : "Este entero no se puede representar sin perder cifras en el editor. Importa el documento desde una herramienta MCP o utiliza otra unidad de tiempo.",
+    );
   }
   if (!$("planner").reportValidity()) return false;
   if (!problem.jobs.length) {
@@ -397,20 +404,27 @@ async function calculate(compare = false) {
 }
 async function download(value, name) {
   try {
-    const exported = await api("/api/exports", {document: value, kind: name.includes("problema") ? "problem" : "results"});
+    const exported = await api("/api/exports", {
+      document: value,
+      kind: name.includes("problema") ? "problem" : "results",
+    });
     const a = node("a");
     a.href = exported.url;
     a.download = exported.filename;
     a.textContent = "Descargar " + exported.filename;
-    message("Documento preparado. Su copia también queda conservada localmente. ");
+    message(
+      "Documento preparado. Su copia también queda conservada localmente. ",
+    );
     $("notice").append(document.createTextNode(" "), a);
-  } catch(error) {
+  } catch (error) {
     message("No se pudo exportar: " + error.message, true);
   }
 }
 
 async function history() {
-  const items = (await api("/api/records")).filter(item => ["problem", "run"].includes(item.kind));
+  const items = (await api("/api/records")).filter((item) =>
+    ["problem", "run"].includes(item.kind),
+  );
   const target = $("history");
   target.replaceChildren();
   if (!items.length) {
@@ -591,8 +605,19 @@ try {
 // The shared Faustus panel reads the actual draft, never a DOM approximation.
 window.hoardCopilot = {
   context: async () => ({
-    active_objects: runs.map(run => ({object_id: run.id, kind: "schedule_run", title: run.name})),
-    editor: {kind: "scheduling_problem", draft: structuredClone(problem), results: runs.map(run => ({id: run.id, result: structuredClone(run.result)}))},
+    active_objects: runs.map((run) => ({
+      object_id: run.id,
+      kind: "schedule_run",
+      title: run.name,
+    })),
+    editor: {
+      kind: "scheduling_problem",
+      draft: structuredClone(problem),
+      results: runs.map((run) => ({
+        id: run.id,
+        result: structuredClone(run.result),
+      })),
+    },
   }),
-  onChange: () => history().catch(error => message(error.message, true)),
+  onChange: () => history().catch((error) => message(error.message, true)),
 };

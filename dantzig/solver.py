@@ -5,11 +5,19 @@ Changeovers represent minimum elapsed gaps, not occupied setup operations.
 """
 from ortools.sat.python import cp_model
 from time import perf_counter
+from math import floor, isfinite, nextafter, inf
 from .models import Problem
 
 
 class VerificationError(RuntimeError):
     pass
+
+
+def integer_bound(solver):
+    value = solver.best_objective_bound
+    # Bounds arrive as doubles; one downward ULP avoids claiming a stronger
+    # bound through conversion noise. Both objectives are nonnegative integers.
+    return max(0, floor(nextafter(value, -inf))) if isfinite(value) else None
 
 
 def verify(problem: Problem, rows: list[dict]) -> list[str]:
@@ -108,7 +116,7 @@ def solve(problem: Problem, seconds: float = 10) -> dict:
     solver.parameters.num_workers = 1
     started = perf_counter()
     status = solver.solve(model)
-    bounds = {"primary": solver.best_objective_bound, "secondary": None}
+    bounds = {"primary": integer_bound(solver), "secondary": None}
     if status == cp_model.OPTIMAL:
         # Fix only a proven primary optimum; never label a secondary optimum
         # under an unproven first-stage choice as globally lexicographic optimal.
@@ -123,7 +131,7 @@ def solve(problem: Problem, seconds: float = 10) -> dict:
             second.parameters.max_time_in_seconds = remaining
             second.parameters.num_workers = 1
             second_status = second.solve(model)
-            bounds["secondary"] = second.best_objective_bound
+            bounds["secondary"] = second.value(secondary) if second_status == cp_model.OPTIMAL else integer_bound(second)
             if second_status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                 solver, status = second, second_status
         # Otherwise retain the first-stage incumbent and report feasible.

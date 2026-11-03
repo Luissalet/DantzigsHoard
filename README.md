@@ -2,7 +2,7 @@
 
 Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y siete herramientas MCP de planificación.
 
-Estado: motor/API/MCP inicial integrado con aprobación de1938r1. La segunda entrega en worktree incorpora editor de pedidos, recursos, cronogramas, comparación, importación/exportación e historial; pendiente de revisión e integración. El configurador1939r2 está en Main, con cambios pedidos en revisión. Copilot común y registro Hub siguen pendientes. Arranque explícito, sin consultas a modelos.
+Estado: motor/API/MCP inicial integrado con aprobación de1938r1. El configurador1939r3 está aprobado e integrado en Main (7c46280). El candidato1938r3 incorpora editor de pedidos, recursos, cronogramas, comparación, importación/exportación e historial, con el tema oscuro común y el icono de familia corregido. La revisión1938r2 aprobó el funcionamiento y pidió corregir el tema visual; la nueva entrega necesita revisión e integración. Copilot común1941 aprobado, pendiente de integrar junto al planificador. Registro Hub pendiente. Arranque explícito, sin consultas a modelos.
 
 ## Uso
 
@@ -26,7 +26,7 @@ Cada solución se comprueba fuera del solver: presencia de todos los trabajos, r
 
 ## Verificación
 
-Instalar `pytest httpx` y ejecutar `python -m pytest -q`. Candidato compuesto:77 pruebas (22 planificación y55 configurador). Planificación incluye12 problemas inventados comparados con enumeración independiente en ambos órdenes lexicográficos, regresión de horizonte grande y caso investigado de6pedidos, imposibilidad, precedencias, entrada inválida, persistencia/API y cliente MCP stdio real. Navegador Brave: petición POST real de2pedidos devuelve óptimo, precedencia y retraso0. Los casos no representan una fábrica real.
+Instalar `pytest httpx` y ejecutar `python -m pytest -q`. Candidato compuesto:92 pruebas (23 planificación/exportación y69 configurador). Planificación incluye12 problemas inventados comparados con enumeración independiente en ambos órdenes lexicográficos, regresión de horizonte grande y caso investigado de6pedidos, imposibilidad, precedencias, entrada inválida, persistencia/API y cliente MCP stdio real. La revisión independiente1938r2 añadió300 casos de planificación sin discrepancias. Los casos no representan una fábrica real.
 
 El motor usa OR-Tools9.15 en proceso, biblioteca Apache2.0 de Google; no ejecuta una CLI externa. Procedencia: https://developers.google.com/optimization/scheduling/job_shop . Las dependencias y sus licencias conservan su identidad; este repositorio define sus modelos, servicio, datos y contrato de herramientas.
 
@@ -43,7 +43,7 @@ Segundo módulo (tarea1939 del espacio `dantzig`): catálogos de componentes con
 
 Estados: `optimal`, `feasible` (válido sin prueba de óptimo), `infeasible` (demostrado imposible), `inconclusive` (sin respuesta en el tiempo dado). `seconds` es el presupuesto total de la operación (sin tope fijo): cada paso usa lo que queda; en `complete`/`repair` cada etapa lexicográfica recibe una parte del resto y solo fija un óptimo demostrado, de modo que si una etapa posterior se queda sin tiempo se devuelve la mejor configuración ya encontrada como `feasible`. Precios y números del catálogo se guardan exactos: enteros, decimales exactos o fracciones `"p/q"`. La compatibilidad es lógica: no sustituye un cálculo físico ni de resistencia.
 
-Pruebas: `tests/test_configurator.py`, 55 casos; 40 catálogos aleatorios contrastados con enumeración en comprobación, completado, reparación y explicación; conflictos mínimos comprobados exhaustivamente; caso que exige cambiar dos elecciones a la vez; API y MCP stdio real.
+Pruebas: `tests/test_configurator.py`, 69 casos; 40 catálogos aleatorios contrastados con enumeración en comprobación, completado, reparación y explicación; conflictos mínimos comprobados exhaustivamente; caso que exige cambiar dos elecciones a la vez; API y MCP stdio real. Revisión1939r3 aprobada después de contrastar otros20 catálogos y540 combinaciones; en Brave, reparación de dos elecciones incompatibles y lista de materiales de475EUR, con enumeración de6075 combinaciones.
 
 ## Interfaz de planificación
 
@@ -52,6 +52,8 @@ La página inicial permite editar recursos y pedidos sin escribir JSON, calcular
 Brave QA de la segunda entrega: comparación4/19 frente5/16, guardado y recuperación Unicode, resultado invalidado al editar, imposibilidad por límite obligatorio0 y conservación de nombre vacío al recargar. La prueba detectó y corrigió el borrado de borradores incompletos. Inspección a390px sin desbordamiento global, tabla con desplazamiento propio. La comprobación automática de estilo funcionó degradada por falta de parsers; no acredita contraste ni auditoría completa.
 
 ## Integración de familia (candidato1941)
+
+Tema oscuro canónico, paleta jade y nuevo icono basado en las referencias reales Coase/Vitruvius, conservando la silueta del dragón común. El primer icono generado fue rechazado por Luis y sustituido; no es una alternativa vigente. Procedencia y prompt completos en E:/Development/IA/Research/Hangar-2026-11-02/ICONO-DANTZIG-V2.json. Paleta común en revisión separada hoardlink1944. Vista real de390px comprobada con este tema.
 
 Biblioteca HoardLink canónica incorporada mediante sync_vendored.py,112ficheros comprobados byte a byte, licencia y VENDORED.txt conservados. El copiloto comparte panel, conversaciones y servicio de Faustus; el botón usa el icono canónico. El contexto del planificador aporta el borrador real y los resultados mostrados, y una actualización del asistente refresca el historial sin sustituir el editor.
 
