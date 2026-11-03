@@ -1,8 +1,10 @@
 # Dantzig's Hoard
 
+`dantzig_example` y `dantzig_validate` declaran `readOnlyHint=true` en MCP: consultan datos inventados y validan entradas sin crear almacenamiento. Faustus puede descubrirlas en modo Plan. Las operaciones que guardan problemas, resultados o exportaciones conservan su clasificación de escritura. La anotación describe el servicio existente; no cambia el cálculo ni la política de permisos de Faustus.
+
 Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y siete herramientas MCP de planificación.
 
-Incluye editor de pedidos y recursos, cronograma, comparación de objetivos, importación/exportación e historial, con tema oscuro común e icono de familia. Los calendarios declaran cierres y mantenimiento por recurso. El configurador completa elecciones compatibles, repara incompatibilidades y calcula una lista de materiales con precios exactos. El panel común entrega el contexto a Faustus; el cálculo de planes no consulta un modelo. El estado exacto de las revisiones1938/1941/1942/1980 se conserva en el Ágora, espacio dantzig. Registro Hub y conexión operativa se verifican por separado; no se deducen de tener un manifiesto.
+Incluye editor de pedidos y recursos, cronograma, comparación de objetivos, importación/exportación e historial, con tema oscuro común e icono de familia. Los calendarios declaran cierres y mantenimiento por recurso. El configurador completa elecciones compatibles, repara incompatibilidades y calcula una lista de materiales con precios exactos. El panel común entrega el contexto a Faustus; el cálculo de planes no consulta un modelo. El estado exacto de las revisiones1938/1941/1942/1980 se conserva en el Ágora, espacio dantzig. Registro nativo Hub y conexión Faustus comprobados:16herramientas desde la instalación permanente. Un turno real del modelo global leyó y validó el ejemplo mediante MCP; recibo DANTZIG-MODELO-HERRAMIENTAS-QA.json en Research.
 
 ## Uso
 

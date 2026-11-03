@@ -5,6 +5,7 @@
   "purpose": "Native resource scheduling and product configuration with explicit constraints and verified results.",
   "capabilities": [
     "resource-scheduling",
+    "resource-calendars",
     "alternative-resources",
     "precedence",
     "deadlines",
