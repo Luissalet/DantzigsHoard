@@ -2,7 +2,7 @@
 
 Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y siete herramientas MCP de planificación.
 
-Estado: motor/API/MCP inicial integrado con aprobación de1938r1. El configurador1939r3 está aprobado e integrado en Main (7c46280). El candidato1938r3 incorpora editor de pedidos, recursos, cronogramas, comparación, importación/exportación e historial, con el tema oscuro común y el icono de familia corregido. La revisión1938r2 aprobó el funcionamiento y pidió corregir el tema visual; la nueva entrega necesita revisión e integración. Copilot común1941 aprobado, pendiente de integrar junto al planificador. Registro Hub pendiente. Arranque explícito, sin consultas a modelos.
+Incluye editor de pedidos y recursos, cronograma, comparación de objetivos, importación/exportación e historial, con tema oscuro común e icono de familia. Los calendarios declaran cierres y mantenimiento por recurso. El configurador completa elecciones compatibles, repara incompatibilidades y calcula una lista de materiales con precios exactos. El panel común entrega el contexto a Faustus; el cálculo de planes no consulta un modelo. El estado exacto de las revisiones1938/1941/1942/1980 se conserva en el Ágora, espacio dantzig. Registro Hub y conexión operativa se verifican por separado; no se deducen de tener un manifiesto.
 
 ## Uso
 

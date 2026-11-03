@@ -1,12 +1,12 @@
 # Dantzig · capacidades actuales
 
-Motor1938r1 integrado y aprobado. Configurador1939r3 aprobado e integrado en7c46280. Candidato1938r3 añade editor de planificación, resolución lexicográfica en dos etapas y tema oscuro común; corrige los cambios visuales pedidos en1938r2, cuyo funcionamiento está aprobado. Pendiente de nueva revisión/integración.
+Motor de planificación con editor, resolución lexicográfica en dos etapas, calendarios de indisponibilidad y tema oscuro común. Configurador finito con completado, reparación mínima y lista de materiales. Estado exacto de aprobación e integración de1938/1941/1942/1980 en el Ágora del espacio dantzig; una prueba positiva no equivale a un voto de revisión.
 
 Siete herramientas nativas de planificación: dantzig_validate, dantzig_export, dantzig_example, dantzig_save_problem, dantzig_solve, dantzig_records, dantzig_record. Comparten servicio con HTTP. Descubrimiento/validación no inician HTTP ni abren datos. Sin Sparks ni GPU para calcular.
 
-Interfaz candidata: editor de recursos/pedidos, Gantt más tabla, comparación de objetivos, historial propio, importación/exportaciónJSON y borrador persistente. Estados optimal/feasible/infeasible/unknown. Objetivos y alcance detallados en README. Los ciclos de precedencia se rechazan explícitamente; no interpretar unknown como imposible.
+Interfaz: editor de recursos/pedidos y cierres por recurso, Gantt más tabla, comparación de objetivos, historial propio, importación/exportaciónJSON y borrador persistente. Estados optimal/feasible/infeasible/unknown. Objetivos y alcance detallados en README. Los ciclos de precedencia se rechazan explícitamente; no interpretar unknown como imposible.
 
-Verificación del candidato compuesto:92pruebas, MCPstdio real,24contrastes de objetivos y regresión de tiempos grandes; revisión independiente1938r2 con300 casos adicionales. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad, importación y recarga de borrador incompleto. Vista oscura390px comprobada. Icono corregido a partir del dragón común, sustituyendo el rechazado por Luis. Copilot común1941 aprobado, pendiente de integrar junto al planificador; registroHub pendiente.
+Verificación del conjunto con calendarios:117pruebas, MCPstdio real, contraste independiente de objetivos y24casos exhaustivos de calendarios, más regresiones de tiempos grandes. La revisión1938r2 contrastó300casos adicionales del motor anterior. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad, importación y borrador incompleto; calendario, renombrado Unicode y vista390px. Icono basado en el dragón común, sustituyendo el rechazado por Luis. Copilot1941 aprobado; registro operativo en Hub y conexión de herramientas requieren comprobación propia.
 
 Coordinación: dantzig1938 y1939, programa ecosystem1937. Investigación: E:/Development/IA/Research/Hangar-2026-11-02.
 
@@ -16,9 +16,9 @@ Herramientas: `dantzig_config_examples`, `dantzig_config_example`, `dantzig_conf
 
 Para un encargo de configurador: formular el catálogo como JSON (huecos, opciones con atributos, reglas requires/excludes/compare/sum), guardarlo, usar propagate mientras se elige, complete para cerrar, repair cuando el cliente pide algo imposible y explain para justificarlo. Con catálogos pequeños, verify demuestra el resultado por enumeración. Página para Luis: `/configurator`.
 
-## Candidato de familia1941
+## Integración de familia1941
 
-Copilotocomún incorporado con biblioteca canónica; /api/copilot/info y launcher200, panel abierto enBrave sin invocar modelo. Contexto propio del borrador definido en window.hoardCopilot. Se ha comprobado la definición en código; el evaluador de navegador no expone ese global para leerlo, por tanto no se afirma lectura viva de ese objeto. Manifiesto arrancable y puerto adaptable, validado con parser real delHub. RegistroHub y conexión operativa del panel con las herramientas pendientes de revisión/integración. MCPstdio sigue siendo el acceso de herramientas probado.
+Copiloto común con biblioteca canónica; /api/copilot/info y launcher200, panel abierto enBrave sin invocar modelo. Contexto propio del borrador definido en window.hoardCopilot. No se afirma lectura viva de ese objeto desde el evaluador de navegador. Manifiesto arrancable y puerto adaptable, validado con el parser real delHub. MCPstdio probado con16herramientas desde el cliente nativo McpManager de Faustus en un entorno aislado. Esto no acredita por sí mismo una conexión operativa registrada en el panel.
 
 Exportación1942: preparación JSON persistente por API y dantzig_export, descargaHTTP con nombre controlado. API/MCP y selector de importación probados; descarga en disco desde el navegador sin certificar. Consultar README para límites de la verificación. El total de herramientas del candidato es16 (7planificación/exportación y9configurador).
 
