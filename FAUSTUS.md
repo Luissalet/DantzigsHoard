@@ -21,3 +21,9 @@ Para un encargo de configurador: formular el catálogo como JSON (huecos, opcion
 Copilotocomún incorporado con biblioteca canónica; /api/copilot/info y launcher200, panel abierto enBrave sin invocar modelo. Contexto propio del borrador definido en window.hoardCopilot. Se ha comprobado la definición en código; el evaluador de navegador no expone ese global para leerlo, por tanto no se afirma lectura viva de ese objeto. Manifiesto arrancable y puerto adaptable, validado con parser real delHub. RegistroHub y conexión operativa del panel con las herramientas pendientes de revisión/integración. MCPstdio sigue siendo el acceso de herramientas probado.
 
 Exportación1942: preparación JSON persistente por API y dantzig_export, descargaHTTP con nombre controlado. API/MCP y selector de importación probados; descarga en disco desde el navegador sin certificar. Consultar README para límites de la verificación. El total de herramientas del candidato es16 (7planificación/exportación y9configurador).
+
+## Calendarios candidatos1980
+
+Campo opcional del problema: `unavailability: {recurso: [{start, end}]}`. Periodos sin disponibilidad semiabiertos, enteros, sin interrupción del trabajo; recursos desconocidos y ventanas inválidas se rechazan explícitamente. Las herramientas validate/solve y la API aceptan el mismo campo. El editor y el contexto del copiloto conservan el calendario, incluido un borrador incompleto. Ejemplo: un trabajo de12unidades y cierre10–20 se planifica20–32.
+
+117pruebas positivas en esta rama, incluidas25de calendarios y24contrastes exhaustivos. MCPstdio/HTTP y Brave probados, móvil390px. No afirmar capacidad integrada: tarea1980 pendiente de revisión propia y de integrar su base1938/1942. No se añade conversión de horas ni recurrencia semanal automática.

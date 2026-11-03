@@ -20,6 +20,20 @@ def integer_bound(solver):
     return max(0, floor(nextafter(value, -inf))) if isfinite(value) else None
 
 
+def blocked_periods(problem, resource, horizon):
+    """Union of half-open unavailable intervals, clipped to this solve horizon."""
+    merged = []
+    for window in sorted(problem.unavailability.get(resource, []), key=lambda w: w.start):
+        if window.start >= horizon:
+            continue
+        end = min(window.end, horizon)
+        if merged and window.start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((window.start, end))
+    return merged
+
+
 def verify(problem: Problem, rows: list[dict]) -> list[str]:
     """Check a candidate independently of CP-SAT and its objective expression."""
     errors = []
@@ -36,6 +50,10 @@ def verify(problem: Problem, rows: list[dict]) -> list[str]:
             errors.append(f"{key}: duración incorrecta")
         if row["start"] < j.release:
             errors.append(f"{key}: empieza antes de estar disponible")
+        # Check the original windows, independently of the solver's merged union.
+        if any(row["start"] < w.end and row["end"] > w.start
+               for w in problem.unavailability.get(row["resource"], [])):
+            errors.append(f"{key}: ocupa un periodo sin disponibilidad de {row['resource']}")
         if j.deadline is not None and row["end"] > j.deadline:
             errors.append(f"{key}: incumple fecha límite obligatoria")
         if problem.horizon is not None and row["end"] > problem.horizon:
@@ -54,7 +72,8 @@ def verify(problem: Problem, rows: list[dict]) -> list[str]:
 
 def solve(problem: Problem, seconds: float = 10) -> dict:
     horizon = problem.horizon or (
-        max(j.release for j in problem.jobs)
+        max([j.release for j in problem.jobs]
+            + [w.end for periods in problem.unavailability.values() for w in periods])
         + sum(max(j.durations.values()) for j in problem.jobs)
         + problem.family_change * (len(problem.jobs) - 1)
     )
@@ -95,6 +114,8 @@ def solve(problem: Problem, seconds: float = 10) -> dict:
                 arcs.append((i, k, arc))
                 gap = problem.family_change if j.family != other.family else 0
                 model.add(starts[other.id] >= ends[j.id] + gap).only_enforce_if(arc)
+        for i, (start, end) in enumerate(blocked_periods(problem, r, horizon)):
+            intervals.append(model.new_interval_var(start, end - start, end, f"unavailable_{r}_{i}"))
         model.add_no_overlap(intervals)
         model.add_circuit(arcs)
     makespan = model.new_int_var(0, horizon, "makespan")
@@ -137,7 +158,7 @@ def solve(problem: Problem, seconds: float = 10) -> dict:
         # Otherwise retain the first-stage incumbent and report feasible.
     result = {"status": solver.status_name(status).lower(), "objective": problem.objective,
               "unit": problem.unit, "horizon": horizon, "seconds": perf_counter() - started,
-              "scope": "Trabajos indivisibles, recursos exclusivos, tiempos enteros; cambios de familia como separación mínima.",
+              "scope": "Trabajos indivisibles, recursos exclusivos y periodos sin disponibilidad; tiempos enteros y cambios de familia como separación mínima.",
               "schedule": []}
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         result["message"] = "No existe un plan dentro de las condiciones y horizonte indicados" if status == cp_model.INFEASIBLE else "La búsqueda terminó sin determinar una solución"
