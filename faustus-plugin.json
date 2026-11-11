@@ -86,5 +86,6 @@
       "launcher": "/api/copilot/launcher.js"
     },
     "agent_contract": false
-  }
+  },
+  "skills": {"slugs": ["constraint-scheduling", "spec-driven-development", "verification-loop"], "limit": 3}
 }

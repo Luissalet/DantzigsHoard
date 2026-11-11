@@ -31,3 +31,7 @@ Exportación1942: preparación JSON persistente por API y dantzig_export, descar
 Campo opcional del problema: `unavailability: {recurso: [{start, end}]}`. Periodos sin disponibilidad semiabiertos, enteros, sin interrupción del trabajo; recursos desconocidos y ventanas inválidas se rechazan explícitamente. Las herramientas validate/solve y la API aceptan el mismo campo. El editor y el contexto del copiloto conservan el calendario, incluido un borrador incompleto. Ejemplo: un trabajo de12unidades y cierre10–20 se planifica20–32.
 
 117pruebas positivas en esta rama, incluidas25de calendarios y24contrastes exhaustivos. MCPstdio/HTTP y Brave probados, móvil390px. No afirmar capacidad integrada: tarea1980 pendiente de revisión propia y de integrar su base1938/1942. No se añade conversión de horas ni recurrencia semanal automática.
+
+## Skills for the agents that connect
+
+This app carries procedures from the skill library of the family's workspace for the agents that connect to it: `constraint-scheduling`, `spec-driven-development`, `verification-loop`. They are named in what an agent reads on connecting, read with `skills_list` and `skill_read`, searched and assigned with `skills_library` and `skills_assign`, and offered as prompts. The person chooses them on the skills page (`/api/agent/skills/page`) or in the hub's Skills tab; the `skills` block of `faustus-plugin.json` holds what the app asks for by default.
