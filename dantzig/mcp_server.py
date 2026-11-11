@@ -52,5 +52,12 @@ def dantzig_record(record_id: str) -> dict:
 register_configurator(mcp)
 
 
+try:  # the skills this app carries, for the agent that connects
+    from dantzig.hoard_link import skills as _family_skills
+    _family_skills.attach(mcp, 'dantzig', root=__file__)
+except Exception:  # noqa: BLE001 - the bridge works without them
+    pass
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
