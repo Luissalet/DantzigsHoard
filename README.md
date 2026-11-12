@@ -1,82 +1,86 @@
 # Dantzig's Hoard
 
-`dantzig_example` y `dantzig_validate` declaran `readOnlyHint=true` en MCP: consultan datos inventados y validan entradas sin crear almacenamiento. Faustus puede descubrirlas en modo Plan. Las operaciones que guardan problemas, resultados o exportaciones conservan su clasificación de escritura. La anotación describe el servicio existente; no cambia el cálculo ni la política de permisos de Faustus.
+Planificador de taller y configurador de catálogos con restricciones, en local.
 
-Planifica trabajos sobre recursos alternativos con tiempos enteros, disponibilidad, precedencias, fechas deseadas, fechas límite obligatorias y separación por cambio de familia. Conserva problemas y resultados en SQLite, con el mismo servicio desde HTTP y siete herramientas MCP de planificación.
+![Dantzig's Hoard](app-icon.png)
 
-Incluye editor de pedidos y recursos, cronograma, comparación de objetivos, importación/exportación e historial, con tema oscuro común e icono de familia. Los calendarios declaran cierres y mantenimiento por recurso. El configurador completa elecciones compatibles, repara incompatibilidades y calcula una lista de materiales con precios exactos. El panel común entrega el contexto a Faustus; el cálculo de planes no consulta un modelo. El estado exacto de las revisiones1938/1941/1942/1980 se conserva en el Ágora, espacio dantzig. Registro nativo Hub y conexión Faustus comprobados:16herramientas desde la instalación permanente. Un turno real del modelo global leyó y validó el ejemplo mediante MCP; recibo DANTZIG-MODELO-HERRAMIENTAS-QA.json en Research.
+## Qué es
 
-## Uso
+Dantzig's Hoard resuelve decisiones con restricciones sobre un motor CP-SAT (OR-Tools) que corre dentro del propio proceso. Tiene dos módulos que comparten servicio, base SQLite y herramientas MCP: un **planificador** de trabajos sobre recursos alternativos y un **configurador** de catálogos de componentes con compatibilidades cruzadas.
 
-Python3.11 o posterior. Crear un entorno propio e instalar `pip install -e .`. Ejecutar `python -m dantzig` y abrir http://127.0.0.1:5241/. `--port` cambia el puerto. `DANTZIG_DATA` selecciona una carpeta de datos independiente. Por defecto usa `data/` del repositorio, ignorada por Git. MCP: `python -m dantzig.mcp_server`. Descubrir herramientas no arranca HTTP ni abre datos.
+Cada solución se comprueba fuera del solver, y los problemas guardados son inmutables: guardar una variación crea otro ID, y cada cálculo conserva su propia entrada. El cálculo no consulta ningún modelo de lenguaje.
 
-API: `POST /api/validate`, `GET /api/example`, `POST /api/problems`, `POST /api/solve`, `GET /api/records`, `GET /api/records/{id}`. La última ruta permite exportar entradas y resultados completos. Un problema guardado es inmutable; guardar una variación crea otro ID. Cada cálculo conserva su propia entrada.
+## Qué hace
 
-El cuerpo de solve es `{ "problem": <problema de /api/example>, "seconds": 10 }`. El esquema completo está en `/openapi.json`. No hay conversión automática de unidades: todas las duraciones/fechas deben usar la misma unidad declarada y el mismo origen temporal.
+**Planificador**
+- Asigna cada trabajo a exactamente un recurso compatible, sin interrupciones, con tiempos enteros, disponibilidad, precedencias, fechas de liberación, fechas deseadas con retraso ponderado, fechas límite obligatorias y separación mínima entre trabajos consecutivos de familias distintas.
+- Calendarios por recurso: periodos sin disponibilidad (cierres y mantenimiento) como intervalos semiabiertos; los solapados o contiguos se unen para el cálculo y la entrada original se conserva.
+- Dos objetivos lexicográficos, retraso ponderado y finalización, en cualquiera de los dos órdenes; la primera etapa se fija solo si su óptimo está demostrado. Ambas comparten el presupuesto de tiempo.
+- Estados honestos: `optimal`, `feasible` (plan comprobado sin prueba de óptimo), `infeasible` (el modelo es incompatible) y `unknown` (sin conclusión). `objective_bounds.primary/secondary` dan las cotas por objetivo.
+- Rechaza ciclos de precedencia con un mensaje propio. Sin horizonte explícito, deriva uno suficiente para modelos válidos.
+- Interfaz: editor de pedidos y recursos sin escribir JSON, cronograma con tabla equivalente (periodos sin disponibilidad rayados), comparación de objetivos, importación y exportación JSON de problemas y ejecuciones, historial y borradores locales que sobreviven a recargar.
+- Exportaciones nativas: `POST /api/exports` conserva una instantánea y devuelve un enlace de descarga.
 
-## Semántica
-
-- `durations` indica recursos compatibles y duración positiva en cada uno. Cada trabajo se asigna exactamente a uno, sin interrupciones.
-- `release` es el instante mínimo de inicio; `after` referencia trabajos que deben terminar antes.
-- `due` es una preferencia: el retraso positivo se multiplica por `weight`. `deadline` es obligatoria.
-- `family_change` es la separación mínima entre trabajos consecutivos de familias distintas en el mismo recurso. No representa una operación de preparación que ocupe a un operario ni un calendario de mantenimiento.
-- `horizon` opcional restringe la finalización. Si se omite, se deriva una cota serial suficiente para modelos válidos sin ciclos. Una conclusión de imposibilidad se refiere al modelo y a su horizonte.
-- Objetivo: retraso ponderado primero y finalización después, o el orden inverso. Se resuelven dos etapas: se fija el primer objetivo sólo si su óptimo está demostrado y se optimiza después el segundo. Ambas comparten el presupuesto temporal; agotar la segunda conserva el plan de la primera como factible.
-- `optimal` acredita óptimo del modelo; `feasible` conserva un plan comprobado sin prueba de óptimo; `infeasible` acredita incompatibilidad del modelo; `unknown` no acredita imposibilidad. `objective_bounds.primary/secondary` contienen las cotas por objetivo en ese orden. El antiguo `objective_bound` permanece como null para compatibilidad; ya no se utiliza la combinación escalada. Los ciclos de precedencia se rechazan con un mensaje propio.
-
-Cada solución se comprueba fuera del solver: presencia de todos los trabajos, recurso/duración, disponibilidad, precedencias, fechas obligatorias, horizonte, exclusión y separación de familias. El candidato1980 incorpora periodos sin disponibilidad por recurso, descritos abajo. No se han modelado operarios compartidos, interrupciones, rutas ni inventario.
-
-## Verificación
-
-Instalar `pytest httpx` y ejecutar `python -m pytest -q`. Candidato compuesto:92 pruebas (23 planificación/exportación y69 configurador). Planificación incluye12 problemas inventados comparados con enumeración independiente en ambos órdenes lexicográficos, regresión de horizonte grande y caso investigado de6pedidos, imposibilidad, precedencias, entrada inválida, persistencia/API y cliente MCP stdio real. La revisión independiente1938r2 añadió300 casos de planificación sin discrepancias. Los casos no representan una fábrica real.
-
-El motor usa OR-Tools9.15 en proceso, biblioteca Apache2.0 de Google; no ejecuta una CLI externa. Procedencia: https://developers.google.com/optimization/scheduling/job_shop . Las dependencias y sus licencias conservan su identidad; este repositorio define sus modelos, servicio, datos y contrato de herramientas.
-
-## Configurador
-
-Segundo módulo (tarea1939 del espacio `dantzig`): catálogos de componentes con compatibilidades cruzadas. Página `/configurator` (servida por el propio módulo desde `dantzig/configurator/static`), API `/api/configurator/*`, nueve herramientas MCP `dantzig_config_*`. Mismo motor CP-SAT en proceso y misma base SQLite (registros `catalog` y `config_run`).
-
-- Catálogo: huecos (`slots`) obligatorios u opcionales, opciones con precio, cantidad, existencias y atributos; reglas `requires`, `excludes`, `compare` (atributo frente a atributo de otro hueco o constante, con factor y desplazamiento) y `sum` (suma de un atributo frente a una constante o al atributo de otro hueco). Ejemplo incluido: `drive-kit`, kit de accionamiento inventado.
-- `propagate`: para cada hueco, qué opciones siguen siendo posibles con el resto de elecciones, cuáles quedan obligadas y si las elecciones encajan juntas.
-- `complete`: rellena lo que falta con objetivo lexicográfico (`price`, `count` o cualquier atributo numérico, `min`/`max`) y devuelve lista de materiales.
-- `repair`: cambia el menor número de elecciones (varias a la vez si hace falta) y después optimiza; lista los cambios y los conflictos de partida.
-- `explain`: todos los conjuntos mínimos de elecciones incompatibles con las reglas mínimas (o la falta de existencias) que los causan; `exhaustive` indica si puede haber más.
+**Configurador** (`/configurator`)
+- Catálogos con huecos (`slots`) obligatorios u opcionales y opciones con precio, cantidad, existencias y atributos; reglas `requires`, `excludes`, `compare` (atributo frente a atributo de otro hueco o a una constante, con factor y desplazamiento) y `sum`.
+- `propagate`: qué opciones siguen siendo posibles en cada hueco, cuáles quedan obligadas y si las elecciones encajan.
+- `complete`: rellena lo que falta con objetivo lexicográfico (`price`, `count` o cualquier atributo numérico, `min`/`max`) y devuelve la lista de materiales con precios exactos (enteros, decimales o fracciones `"p/q"`).
+- `repair`: cambia el menor número de elecciones, varias a la vez si hace falta, y después optimiza; lista los cambios y los conflictos de partida.
+- `explain`: conjuntos mínimos de elecciones incompatibles y la regla (o la falta de existencias) que los causa.
 - `verify`: contrasta `complete` y `repair` con enumeración exhaustiva independiente (hasta 250.000 combinaciones).
+- Estados `optimal`, `feasible`, `infeasible` e `inconclusive`. `seconds` es el presupuesto total de la operación; si una etapa posterior se queda sin tiempo se devuelve la mejor configuración ya encontrada como `feasible`. Incluye un ejemplo (`drive-kit`).
 
-Estados: `optimal`, `feasible` (válido sin prueba de óptimo), `infeasible` (demostrado imposible), `inconclusive` (sin respuesta en el tiempo dado). `seconds` es el presupuesto total de la operación (sin tope fijo): cada paso usa lo que queda; en `complete`/`repair` cada etapa lexicográfica recibe una parte del resto y solo fija un óptimo demostrado, de modo que si una etapa posterior se queda sin tiempo se devuelve la mejor configuración ya encontrada como `feasible`. Precios y números del catálogo se guardan exactos: enteros, decimales exactos o fracciones `"p/q"`. La compatibilidad es lógica: no sustituye un cálculo físico ni de resistencia.
+## Cómo ejecutarlo
 
-Pruebas: `tests/test_configurator.py`, 69 casos; 40 catálogos aleatorios contrastados con enumeración en comprobación, completado, reparación y explicación; conflictos mínimos comprobados exhaustivamente; caso que exige cambiar dos elecciones a la vez; API y MCP stdio real. Revisión1939r3 aprobada después de contrastar otros20 catálogos y540 combinaciones; en Brave, reparación de dos elecciones incompatibles y lista de materiales de475EUR, con enumeración de6075 combinaciones.
+Requiere Python 3.11 o superior.
 
-## Interfaz de planificación
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install -e .
+.venv\Scripts\python -m dantzig          # http://127.0.0.1:5241/
+```
 
-La página inicial permite editar recursos y pedidos sin escribir JSON, calcular ambos objetivos, consultar cronograma y tabla equivalente, guardar problemas inmutables y abrir ejecuciones con su entrada original. Importa documentos de problema o de una ejecución; exporta problemas y resultados JSON. Los borradores locales incompletos se conservan al recargar. Modificar el problema invalida el resultado mostrado; una respuesta tardía no sustituye un borrador posterior. El historial de planificación filtra sus propios tipos de documento.
+`--port` cambia el puerto. `DANTZIG_DATA` selecciona otra carpeta de datos; por defecto se usa `data/`, ignorada por Git.
 
-Brave QA de la segunda entrega: comparación4/19 frente5/16, guardado y recuperación Unicode, resultado invalidado al editar, imposibilidad por límite obligatorio0 y conservación de nombre vacío al recargar. La prueba detectó y corrigió el borrado de borradores incompletos. Inspección a390px sin desbordamiento global, tabla con desplazamiento propio. La comprobación automática de estilo funcionó degradada por falta de parsers; no acredita contraste ni auditoría completa.
+API del planificador: `GET /api/health`, `GET /api/example`, `POST /api/validate`, `POST /api/problems`, `POST /api/solve` (cuerpo `{"problem": ..., "seconds": 10}`), `GET /api/records`, `GET /api/records/{id}`, `POST /api/exports`, `GET /api/exports/{id}`. El configurador cuelga de `/api/configurator/*`. El esquema completo está en `/openapi.json`.
 
-## Integración de familia (candidato1941)
+## Semántica del planificador
 
-Tema oscuro canónico, paleta jade y nuevo icono basado en las referencias reales Coase/Vitruvius, conservando la silueta del dragón común. El primer icono generado fue rechazado por Luis y sustituido; no es una alternativa vigente. Procedencia y prompt completos en E:/Development/IA/Research/Hangar-2026-11-02/ICONO-DANTZIG-V2.json. Paleta común en revisión separada hoardlink1944. Vista real de390px comprobada con este tema.
+- `durations` indica recursos compatibles y duración positiva en cada uno.
+- `release` es el instante mínimo de inicio; `after` referencia trabajos que deben terminar antes.
+- `due` es una preferencia (el retraso positivo se multiplica por `weight`); `deadline` es obligatoria.
+- `family_change` es tiempo transcurrido, no una preparación que ocupe a un operario; puede transcurrir durante un cierre.
+- `unavailability: {"Torno": [{"start": 10, "end": 20}]}`: un pedido puede terminar a las 10 o empezar a las 20, pero no atravesar el cierre. Con horizonte explícito el calendario se recorta a él.
+- No hay conversión de unidades: duraciones y fechas deben usar la misma unidad y el mismo origen temporal.
+- No se modelan operarios compartidos, interrupciones, rutas ni inventario. La compatibilidad del configurador es lógica y no sustituye un cálculo físico ni de resistencia.
 
-Biblioteca HoardLink canónica incorporada mediante sync_vendored.py,112ficheros comprobados byte a byte, licencia y VENDORED.txt conservados. El copiloto comparte panel, conversaciones y servicio de Faustus; el botón usa el icono canónico. El contexto del planificador aporta el borrador real y los resultados mostrados, y una actualización del asistente refresca el historial sin sustituir el editor.
+## Conexión con Faustus y Hoard Hub
 
-El manifiesto incluye arranque explícito desdeHub, comprobación de salud y adaptación de puerto mediante --port. Leído con el parser real del Hub: launchable=true. Aún no registrado en el Hub: se hará tras revisión. agent_contract=false indica acceso por MCPstdio; no se anuncian rutasHTTP de agente que no existen. /api/copilot/info responde200 y el panel abre enBrave, sin enviar un turno al modelo. No se acredita inferencia con herramientas desde ese panel hasta registrar la conexión.
+`faustus-plugin.json` registra la app como plugin: el Hub la arranca bajo demanda con una comprobación de salud y adaptación de puerto mediante `--port`, y el panel común entrega a Faustus el borrador real del planificador y los resultados mostrados. El acceso de agentes es por MCP stdio (`python -m dantzig.mcp_server`, 16 herramientas); descubrir herramientas no arranca HTTP ni abre datos.
 
-## Exportación nativa (candidato1942)
+| Grupo | Herramientas |
+| --- | --- |
+| Planificación, lectura | `dantzig_example`, `dantzig_validate` (indicación de solo lectura, usables en modo Plan) |
+| Planificación, cálculo y datos | `dantzig_solve`, `dantzig_save_problem`, `dantzig_export`, `dantzig_records`, `dantzig_record` |
+| Configurador, catálogos | `dantzig_config_examples`, `dantzig_config_example`, `dantzig_config_save_catalog`, `dantzig_config_catalogs` |
+| Configurador, cálculo | `dantzig_config_propagate`, `dantzig_config_complete`, `dantzig_config_repair`, `dantzig_config_explain`, `dantzig_config_verify` |
 
-POST /api/exports conserva una instantánea JSON y devuelve un enlace GET /api/exports/{id} con Content-Disposition attachment. La UI ofrece ese enlace visible; ya no utiliza direcciones Blob. dantzig_export realiza la misma preparación por MCP sin iniciar servidor. Los documentos pueden recuperarse mediante dantzig_record; el historial de planificación conserva sus tipos problem/run y no mezcla exportaciones o catálogos. Las pruebas HTTP verifican bytes semánticos, Unicode, enteros grandes, cabecera y recuperación tras reabrir.
+La app lleva además procedimientos de la biblioteca de skills de la familia para los agentes que se conectan (`constraint-scheduling`, `spec-driven-development`, `verification-loop`): aparecen en lo que el agente lee al conectarse, se leen con `skills_list` y `skill_read`, se buscan y asignan con `skills_library` y `skills_assign`, y se ofrecen como prompts. Se eligen en `/api/agent/skills/page` o en la pestaña Skills del Hub.
 
-Selector de archivos de Brave: fixture propia importada y validada correctamente. La captura del evento download no pudo certificar el guardado en disco. El acceso al gestor interno de descargas fue rechazado por la política del navegador y no se reintentó por otra superficie; no confundir la preparación y respuesta HTTP con un archivo verificado en la carpeta de descargas.
+## Estructura del proyecto
 
-## Calendarios de recursos (candidato1980)
+| Ruta | Contenido |
+| --- | --- |
+| `dantzig/solver.py`, `models.py`, `service.py` | Modelo CP-SAT, esquemas y servicio del planificador |
+| `dantzig/app.py`, `static/` | API HTTP e interfaz del planificador |
+| `dantzig/configurator/` | Configurador: catálogo, reglas, solver, verificación, API, herramientas MCP e interfaz |
+| `dantzig/mcp_server.py` | Servidor MCP |
+| `dantzig/hoard_link/` | Código compartido de la familia Hoard |
+| `tests/` | Pruebas del planificador, calendarios, configurador y MCP |
+| `data/` | Base SQLite de problemas, catálogos y ejecuciones |
 
-Un problema puede incluir `unavailability: {"Torno": [{"start": 10, "end": 20}]}`. Inicio y fin son enteros en la misma unidad y origen que los pedidos. Los intervalos son semiabiertos: un pedido puede terminar a las10 o empezar a las20, pero no atravesar el cierre. Los periodos solapados o contiguos se unen para el cálculo, conservando la entrada original en problemas y ejecuciones. Sin este campo, los documentos anteriores conservan su comportamiento.
+Pruebas: `pip install pytest httpx` y `python -m pytest -q`.
 
-El horizonte automático deja espacio para un plan serial después del último cierre y de la última liberación. Si se declara un horizonte explícito, el calendario se recorta a ese horizonte para construir el modelo; no amplía el límite elegido. La separación de familias sigue siendo tiempo transcurrido, no una preparación ocupada: puede transcurrir durante un cierre.
+## Créditos
 
-El editor permite añadir y retirar periodos por recurso y los representa rayados en el cronograma, con una lista textual equivalente. Renombrar o retirar un recurso actualiza su calendario. Los borradores incompletos también se conservan al recargar. API y MCP usan el mismo modelo; `dantzig_validate` y `dantzig_solve` documentan el campo.
-
-Esta rama contiene117pruebas positivas: las92anteriores y25de calendarios, con24contrastes exhaustivos independientes (12casos por dos objetivos), ventanas solapadas, límites semiabiertos, precedencias/cambio de familia, recursos alternativos, persistenciaHTTP y MCPstdio real. Brave: cierre10–20 → plan32; segundo cierre15–25 → plan37; renombrado Unicode y recarga de periodo incompleto conservados. Vista390px/page380px sin desbordamiento global. Capturas en el archivo de investigación. Depende de1938r4/1942r2; no se integra ni se presenta como disponible antes de aprobar ambas bases y esta entrega.
-
-## Skills for the agents that connect
-
-This app carries procedures from the skill library of the family's workspace for the agents that connect to it: `constraint-scheduling`, `spec-driven-development`, `verification-loop`. They are named in what an agent reads on connecting, read with `skills_list` and `skill_read`, searched and assigned with `skills_library` and `skills_assign`, and offered as prompts. The person chooses them on the skills page (`/api/agent/skills/page`) or in the hub's Skills tab; the `skills` block of `faustus-plugin.json` holds what the app asks for by default.
+El motor es [OR-Tools](https://developers.google.com/optimization/scheduling/job_shop) (Apache 2.0, Google), ejecutado en proceso y no como CLI externa. Los ejemplos son datos inventados y no representan una fábrica real.
