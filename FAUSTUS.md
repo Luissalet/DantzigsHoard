@@ -8,7 +8,7 @@ Siete herramientas nativas de planificación: dantzig_validate, dantzig_export, 
 
 Interfaz: editor de recursos/pedidos y cierres por recurso, Gantt más tabla, comparación de objetivos, historial propio, importación/exportaciónJSON y borrador persistente. Estados optimal/feasible/infeasible/unknown. Objetivos y alcance detallados en README. Los ciclos de precedencia se rechazan explícitamente; no interpretar unknown como imposible.
 
-Verificación del conjunto con calendarios y anotaciones:118pruebas positivas en16,37s. MCPstdio real, contraste independiente de objetivos y24casos exhaustivos de calendarios, más regresiones de tiempos grandes. La revisión1938r2 contrastó300casos adicionales del motor anterior. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad, importación y borrador incompleto; calendario, renombrado Unicode y vista390px. Icono basado en el dragón común, sustituyendo el rechazado por Luis. Copilot1941 aprobado.
+Verificación del conjunto con calendarios y anotaciones:118pruebas positivas en16,37s. MCPstdio real, contraste independiente de objetivos y24casos exhaustivos de calendarios, más regresiones de tiempos grandes. La revisión1938r2 contrastó300casos adicionales del motor anterior. Brave: comparar, guardar, reabrir, invalidar al editar, imposibilidad, importación y borrador incompleto; calendario, renombrado Unicode y vista390px. Icono basado en el dragón común. Copilot1941 aprobado.
 
 Registro nativo comprobado: Hub puerto5241, conector Faustus53af00d1 y servidorMCPc00af948,16herramientas conectadas desde la instalación permanente. Un turno real del modelo global deepseek-v4.1-flash leyó y validó el ejemplo mediante dos llamadas MCP, con entrada y resultado coincidentes;37,34s y3rondas, sin herramientas persistentes. Es un caso de integración, no una evaluación de competencia general. Evidencia DANTZIG-MODELO-HERRAMIENTAS-QA.json en Research.
 
@@ -18,7 +18,7 @@ Coordinación: dantzig1938 y1939, programa ecosystem1937. Investigación: E:/Dev
 
 Herramientas: `dantzig_config_examples`, `dantzig_config_example`, `dantzig_config_save_catalog`, `dantzig_config_catalogs`, `dantzig_config_propagate`, `dantzig_config_complete`, `dantzig_config_repair`, `dantzig_config_explain`, `dantzig_config_verify`. Aceptan `catalog_id` (guardado o de ejemplo, p. ej. `drive-kit`) o `catalog` en línea y `selections` `{hueco: opción | null}`.
 
-Para un encargo de configurador: formular el catálogo como JSON (huecos, opciones con atributos, reglas requires/excludes/compare/sum), guardarlo, usar propagate mientras se elige, complete para cerrar, repair cuando el cliente pide algo imposible y explain para justificarlo. Con catálogos pequeños, verify demuestra el resultado por enumeración. Página para Luis: `/configurator`.
+Para un encargo de configurador: formular el catálogo como JSON (huecos, opciones con atributos, reglas requires/excludes/compare/sum), guardarlo, usar propagate mientras se elige, complete para cerrar, repair cuando el cliente pide algo imposible y explain para justificarlo. Con catálogos pequeños, verify demuestra el resultado por enumeración. El configurador se abre en `/configurator`.
 
 ## Integración de familia1941
 
