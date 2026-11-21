@@ -78,6 +78,15 @@
   },
   "notes": "Explicit startup only. MCP stdio exposes the native planner, resource calendars and finite configurator; discovery starts no HTTP app. Copilot uses the canonical family relay, without a separate conversation loop. Review and integration states are recorded in the dantzig Agora space.",
   "x-family": {
+    "isolated_instance": {
+      "data_env": "DANTZIG_DATA",
+      "argv": [
+        "-m",
+        "dantzig",
+        "--port",
+        "{PORT}"
+      ]
+    },
     "copilot": {
       "contract_version": "1.0",
       "info": "/api/copilot/info",
